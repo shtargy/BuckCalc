@@ -54,9 +54,16 @@
         }
         .negative-sign {
             font-size: 20px;
-            margin-right: 4px;
             font-weight: bold;
             color: #333;
+            margin-right: 4px;
+            position: absolute;
+            left: -15px;
+        }
+        .voltage-input-container {
+            display: inline-flex;
+            align-items: center;
+            position: relative;
         }
     </style>
 </head>
@@ -126,8 +133,10 @@
 
         <div class="input-group">
             <label for="ibb_vout">Output Voltage:</label>
-            <span class="negative-sign">−</span>
-            <input type="number" id="ibb_vout" step="0.1">
+            <div class="voltage-input-container">
+                <span class="negative-sign">−</span>
+                <input type="number" id="ibb_vout" step="0.1">
+            </div>
             <span class="unit">V</span>
             <button class="calc-button" onclick="ibb_calculateVout()">Calculate</button>
         </div>
