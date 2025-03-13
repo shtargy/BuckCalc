@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buck Converter Calculator</title>
+    <title>DC-DC Converter Calculators</title>
     <style>
         .calculator {
             max-width: 450px;
@@ -44,6 +44,13 @@
             display: inline-block;
             width: 40px;
             margin-left: 5px;
+        }
+        hr.separator {
+            margin: 40px auto;
+            border: 0;
+            height: 1px;
+            background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
+            width: 80%;
         }
     </style>
 </head>
@@ -96,6 +103,61 @@
             <input type="number" id="ilpp" step="0.1">
             <span class="unit">A</span>
             <button class="calc-button" onclick="calculateIlpp()">Calculate</button>
+        </div>
+    </div>
+
+    <hr class="separator">
+
+    <div class="calculator">
+        <h2>Inverting Buck-Boost Calculator</h2>
+        
+        <div class="input-group">
+            <label for="ibb_vin">Input Voltage:</label>
+            <input type="number" id="ibb_vin" step="0.1">
+            <span class="unit">V</span>
+            <button class="calc-button" onclick="ibb_calculateVin()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+            <label for="ibb_vout">|Output Voltage|:</label>
+            <input type="number" id="ibb_vout" step="0.1">
+            <span class="unit">V</span>
+            <button class="calc-button" onclick="ibb_calculateVout()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+            <label for="ibb_ilavg">IL(avg):</label>
+            <input type="number" id="ibb_ilavg" step="0.1">
+            <span class="unit">A</span>
+            <button class="calc-button" onclick="ibb_calculateILavg()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+            <label for="ibb_iout">Output Current:</label>
+            <input type="number" id="ibb_iout" step="0.1">
+            <span class="unit">A</span>
+            <button class="calc-button" onclick="ibb_calculateIout()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+            <label for="ibb_inductance">Inductance:</label>
+            <input type="number" id="ibb_inductance" step="0.1">
+            <span class="unit">µH</span>
+            <button class="calc-button" onclick="ibb_calculateL()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+            <label for="ibb_fsw">Switching Freq:</label>
+            <input type="number" id="ibb_fsw" step="0.001">
+            <span class="unit">MHz</span>
+            <button class="calc-button" onclick="ibb_calculateFsw()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+            <label for="ibb_ilpp">ΔIL:</label>
+            <input type="number" id="ibb_ilpp" step="0.1">
+            <span class="unit">A</span>
+            <button class="calc-button" onclick="ibb_calculateDeltaIL()">Calculate</button>
         </div>
     </div>
 
