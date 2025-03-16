@@ -1,0 +1,293 @@
+/* Base styles */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+/* Layout */
+.container {
+    display: flex;
+    min-height: 100vh;
+    width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 200px;
+    background-color: #f5f5f5;
+    padding: 20px;
+    border-right: 1px solid #ddd;
+}
+
+.sidebar h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.calculator-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.calculator-item {
+    padding: 10px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.calculator-item:hover {
+    background-color: #e0e0e0;
+}
+
+.calculator-item.active {
+    background-color: #007bff;
+    color: white;
+}
+
+/* Main content area */
+.main-content {
+    flex: 1;
+    padding: 20px;
+    overflow-x: auto;
+    min-width: 950px;
+}
+
+.main-content h2 {
+    margin-top: 0;
+    color: #333;
+}
+
+/* Calculator styles */
+.calculator {
+    display: none;
+}
+
+.calculator.active {
+    display: block;
+}
+
+/* Input groups */
+.input-group {
+    margin-bottom: 15px;
+    display: grid;
+    grid-template-columns: 150px 140px 50px 100px auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.input-group label {
+    font-weight: bold;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    height: 32px;
+}
+
+.unit {
+    min-width: 40px;
+    margin-left: 5px;
+}
+
+.calc-button {
+    padding: 5px 10px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    width: fit-content;
+}
+
+.calc-button:hover {
+    background-color: #45a049;
+}
+
+/* Standard values section */
+.standard-values-group {
+    margin-top: 20px;
+    margin-bottom: 15px;
+}
+
+.standard-values-group label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.standard-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.standard-button {
+    padding: 10px 20px;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.standard-button:hover {
+    background-color: #45a049;
+}
+
+/* Table styles */
+.table-container {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+.standard-pairs-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* Column width specifications */
+.standard-pairs-table th:nth-child(1), /* Top R */
+.standard-pairs-table th:nth-child(2) { /* Bottom R */
+    width: 17%;
+}
+
+.standard-pairs-table th:nth-child(3) { /* Ratio */
+    width: 10%;
+}
+
+.standard-pairs-table th:nth-child(4), /* Ratio Error */
+.standard-pairs-table th:nth-child(7) { /* Current Error */
+    width: 12%;
+}
+
+.standard-pairs-table th:nth-child(5), /* Vmid */
+.standard-pairs-table th:nth-child(6) { /* Current */
+    width: 16%;
+}
+
+.standard-pairs-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.standard-pairs-table th, 
+.standard-pairs-table td {
+    border: 1px solid #ddd;
+    padding: 8px 6px;
+    text-align: center;
+}
+
+#placeholder-row td {
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+}
+
+/* Sorting controls */
+.sort-controls {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sort-button {
+    padding: 5px 10px;
+    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+
+.sort-button:hover {
+    background-color: #e8e8e8;
+}
+
+.sort-button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #0069d9;
+}
+
+/* Error classes for color coding */
+.error-excellent {
+    color: #198754;
+    font-weight: 600;
+}
+
+.error-good {
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.error-acceptable {
+    color: #fd7e14;
+    font-weight: 500;
+}
+
+.error-poor {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+/* Current error colors */
+.current-error-excellent {
+    color: #198754;
+    font-weight: 600;
+}
+
+.current-error-good {
+    color: #0d6efd;
+    font-weight: 500;
+}
+
+.current-error-acceptable {
+    color: #fd7e14;
+    font-weight: 500;
+}
+
+.current-error-poor {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+/* Voltage input container styles */
+.voltage-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+}
+
+.negative-sign {
+    position: absolute;
+    left: -14px;
+    font-weight: bold;
+}
+
+.voltage-input-container input {
+    width: 100%;
+    margin: 0;
+}
+
+/* Power and current info displays */
+.power-info, .current-info, .ratio-info {
+    color: #0056b3;
+    margin-left: 10px;
+} 

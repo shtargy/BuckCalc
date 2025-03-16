@@ -4,179 +4,236 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DC-DC Converter Calculators</title>
-    <style>
-        .calculator {
-            max-width: 450px;
-            margin: 20px auto;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-        }
-        .input-group {
-            margin: 10px 0;
-            padding: 10px 20px;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-            display: flex;
-            align-items: center;
-        }
-        .input-group label {
-            display: inline-block;
-            width: 140px;
-        }
-        .input-group input {
-            width: 100px;
-            margin-right: 10px;
-            padding: 5px;
-        }
-        .calc-button {
-            padding: 5px 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            margin-left: 10px;
-        }
-        .calc-button:hover {
-            background-color: #45a049;
-        }
-        .unit {
-            display: inline-block;
-            width: 40px;
-            margin-left: 5px;
-        }
-        hr.separator {
-            margin: 40px auto;
-            border: 0;
-            height: 1px;
-            background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));
-            width: 80%;
-        }
-        .negative-sign {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            margin-right: 4px;
-            position: absolute;
-            left: -15px;
-        }
-        .voltage-input-container {
-            display: inline-flex;
-            align-items: center;
-            position: relative;
-        }
-    </style>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="calculator">
+    <div class="container">
+        <!-- Sidebar with calculator selection -->
+        <div class="sidebar">
+            <h2>Calculators</h2>
+            <ul class="calculator-list">
+                <li class="calculator-item" data-calculator="buck" onclick="selectCalculator('buck')">
+                    Buck Converter
+                </li>
+                <li class="calculator-item" data-calculator="buck-boost" onclick="selectCalculator('buck-boost')">
+                    Inverting Buck-Boost
+                </li>
+                <li class="calculator-item" data-calculator="divider" onclick="selectCalculator('divider')">
+                    Resistor Divider
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main content area -->
+        <div class="main-content">
+            <!-- Buck Converter Calculator -->
+            <div id="buck-calculator" class="calculator">
         <h2>Buck Converter Calculator</h2>
         
         <div class="input-group">
-            <label for="vin">Input Voltage:</label>
-            <input type="number" id="vin" step="0.1">
+                    <label for="buck-vin">Input Voltage:</label>
+                    <input type="number" id="buck-vin" step="0.1">
             <span class="unit">V</span>
-            <button class="calc-button" onclick="calculateVin()">Calculate</button>
+            <button class="calc-button" onclick="window.calculateVin()">Calculate</button>
         </div>
 
         <div class="input-group">
-            <label for="vout">Output Voltage:</label>
-            <input type="number" id="vout" step="0.1">
+                    <label for="buck-vout">Output Voltage:</label>
+                    <input type="number" id="buck-vout" step="0.1">
             <span class="unit">V</span>
-            <button class="calc-button" onclick="calculateVout()">Calculate</button>
+            <button class="calc-button" onclick="window.calculateVout()">Calculate</button>
         </div>
 
         <div class="input-group">
-            <label for="inductance">Inductance:</label>
-            <input type="number" id="inductance" step="0.1">
+                    <label for="buck-inductance">Inductance:</label>
+                    <input type="number" id="buck-inductance" step="0.1">
             <span class="unit">µH</span>
-            <button class="calc-button" onclick="calculateL()">Calculate</button>
+            <button class="calc-button" onclick="window.calculateL()">Calculate</button>
         </div>
 
         <div class="input-group">
-            <label for="fsw">Switching Freq:</label>
-            <input type="number" id="fsw" step="0.001">
+                    <label for="buck-fsw">Switching Freq:</label>
+                    <input type="number" id="buck-fsw" step="0.001">
             <span class="unit">MHz</span>
-            <button class="calc-button" onclick="calculateFsw()">Calculate</button>
+            <button class="calc-button" onclick="window.calculateFsw()">Calculate</button>
         </div>
 
         <div class="input-group">
-            <label for="vdsh">Vds(hi):</label>
-            <input type="number" id="vdsh" step="0.001">
+                    <label for="buck-vdsh">Vds(hi):</label>
+                    <input type="number" id="buck-vdsh" step="0.001">
             <span class="unit">V</span>
         </div>
 
         <div class="input-group">
-            <label for="vdsl">Vds(lo):</label>
-            <input type="number" id="vdsl" step="0.001">
+                    <label for="buck-vdsl">Vds(lo):</label>
+                    <input type="number" id="buck-vdsl" step="0.001">
             <span class="unit">V</span>
         </div>
 
         <div class="input-group">
-            <label for="ilpp">iL(p-p):</label>
-            <input type="number" id="ilpp" step="0.1">
+                    <label for="buck-ilpp">iL(p-p):</label>
+                    <input type="number" id="buck-ilpp" step="0.1">
             <span class="unit">A</span>
-            <button class="calc-button" onclick="calculateIlpp()">Calculate</button>
+            <button class="calc-button" onclick="window.calculateIlpp()">Calculate</button>
         </div>
     </div>
 
-    <hr class="separator">
+            <!-- Inverting Buck-Boost Calculator -->
+            <div id="buck-boost-calculator" class="calculator">
+                <h2>Inverting Buck-Boost Calculator</h2>
+                
+                <div class="input-group">
+                    <label for="ibb-vin">Input Voltage:</label>
+                    <input type="number" id="ibb-vin" step="0.1">
+                    <span class="unit">V</span>
+                    <button class="calc-button" onclick="window.ibb_calculateVin()">Calculate</button>
+                </div>
 
-    <div class="calculator">
-        <h2>Inverting Buck-Boost Calculator</h2>
-        
-        <div class="input-group">
-            <label for="ibb_vin">Input Voltage:</label>
-            <input type="number" id="ibb_vin" step="0.1">
-            <span class="unit">V</span>
-            <button class="calc-button" onclick="ibb_calculateVin()">Calculate</button>
-        </div>
+                <div class="input-group">
+                    <label for="ibb-vout">Output Voltage:</label>
+                    <div class="voltage-input-container">
+                        <span class="negative-sign">−</span>
+                        <input type="number" id="ibb-vout" step="0.1">
+                    </div>
+                    <span class="unit">V</span>
+                    <button class="calc-button" onclick="window.ibb_calculateVout()">Calculate</button>
+                </div>
 
-        <div class="input-group">
-            <label for="ibb_vout">Output Voltage:</label>
-            <div class="voltage-input-container">
-                <span class="negative-sign">−</span>
-                <input type="number" id="ibb_vout" step="0.1">
+                <div class="input-group">
+                    <label for="ibb-ilavg">IL(avg):</label>
+                    <input type="number" id="ibb-ilavg" step="0.1">
+                    <span class="unit">A</span>
+                    <button class="calc-button" onclick="window.ibb_calculateILavg()">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="ibb-iout">Output Current:</label>
+                    <input type="number" id="ibb-iout" step="0.1">
+                    <span class="unit">A</span>
+                    <button class="calc-button" onclick="window.ibb_calculateIout()">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="ibb-inductance">Inductance:</label>
+                    <input type="number" id="ibb-inductance" step="0.1">
+                    <span class="unit">µH</span>
+                    <button class="calc-button" onclick="window.ibb_calculateL()">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="ibb-fsw">Switching Freq:</label>
+                    <input type="number" id="ibb-fsw" step="0.001">
+                    <span class="unit">MHz</span>
+                    <button class="calc-button" onclick="window.ibb_calculateFsw()">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="ibb-ilpp">ΔIL:</label>
+                    <input type="number" id="ibb-ilpp" step="0.1">
+                    <span class="unit">A</span>
+                    <button class="calc-button" onclick="window.ibb_calculateDeltaIL()">Calculate</button>
+                </div>
             </div>
-            <span class="unit">V</span>
-            <button class="calc-button" onclick="ibb_calculateVout()">Calculate</button>
-        </div>
 
-        <div class="input-group">
-            <label for="ibb_ilavg">IL(avg):</label>
-            <input type="number" id="ibb_ilavg" step="0.1">
-            <span class="unit">A</span>
-            <button class="calc-button" onclick="ibb_calculateILavg()">Calculate</button>
-        </div>
+            <!-- Resistor Divider Calculator -->
+            <div id="divider-calculator" class="calculator">
+                <h2>Resistor Divider Calculator</h2>
+                
+                <div class="input-group">
+                    <label for="div-vtop">Top Voltage:</label>
+                    <input type="number" id="div-vtop" step="0.1">
+                    <span class="unit">V</span>
+                    <button class="calc-button" onclick="calculateDivider('vtop')">Calculate</button>
+                </div>
 
-        <div class="input-group">
-            <label for="ibb_iout">Output Current:</label>
-            <input type="number" id="ibb_iout" step="0.1">
-            <span class="unit">A</span>
-            <button class="calc-button" onclick="ibb_calculateIout()">Calculate</button>
-        </div>
+                <div class="input-group">
+                    <label for="div-vmid">Middle Voltage:</label>
+                    <input type="number" id="div-vmid" step="0.1">
+                    <span class="unit">V</span>
+                    <button class="calc-button" onclick="calculateDivider('vmid')">Calculate</button>
+                </div>
 
-        <div class="input-group">
-            <label for="ibb_inductance">Inductance:</label>
-            <input type="number" id="ibb_inductance" step="0.1">
-            <span class="unit">µH</span>
-            <button class="calc-button" onclick="ibb_calculateL()">Calculate</button>
-        </div>
+                <div class="input-group">
+                    <label for="div-vbot">Bottom Voltage:</label>
+                    <input type="number" id="div-vbot" step="0.1">
+                    <span class="unit">V</span>
+                    <button class="calc-button" onclick="calculateDivider('vbot')">Calculate</button>
+                </div>
 
-        <div class="input-group">
-            <label for="ibb_fsw">Switching Freq:</label>
-            <input type="number" id="ibb_fsw" step="0.001">
-            <span class="unit">MHz</span>
-            <button class="calc-button" onclick="ibb_calculateFsw()">Calculate</button>
-        </div>
+                <div class="input-group">
+                    <label for="div-rtop">Top Resistor:</label>
+                    <input type="number" id="div-rtop" step="0.1">
+                    <span class="unit">Ω</span>
+                    <button class="calc-button" onclick="calculateDivider('rtop')">Calculate</button>
+                    <span class="power-info">(<span id="div-ptop">0.00</span> mW)</span>
+                </div>
 
-        <div class="input-group">
-            <label for="ibb_ilpp">ΔIL:</label>
-            <input type="number" id="ibb_ilpp" step="0.1">
-            <span class="unit">A</span>
-            <button class="calc-button" onclick="ibb_calculateDeltaIL()">Calculate</button>
+                <div class="input-group">
+                    <label for="div-rbot">Bottom Resistor:</label>
+                    <input type="number" id="div-rbot" step="0.1">
+                    <span class="unit">Ω</span>
+                    <button class="calc-button" onclick="calculateDivider('rbot')">Calculate</button>
+                    <span class="power-info">(<span id="div-pbot">0.00</span> mW)</span>
+                </div>
+
+                <div class="input-group">
+                    <label>Resistor Ratio:</label>
+                    <span class="ratio-info"><span id="div-ratio">—</span></span>
+                </div>
+
+                <div class="input-group">
+                    <label>Current:</label>
+                    <span class="current-info"><span id="div-current">0.00</span> mA</span>
+                </div>
+
+                <div class="standard-values-group">
+                    <label>Snap to closest standard values:</label>
+                    <div class="standard-buttons">
+                        <button class="standard-button" id="standard-01" onclick="window.showStandardPairs('0.1')">0.1%</button>
+                        <button class="standard-button" id="standard-1" onclick="window.showStandardPairs('1')">1%</button>
+                        <button class="standard-button" id="standard-5" onclick="window.showStandardPairs('5')">5%</button>
+                    </div>
+                </div>
+
+                <div id="standard-values-container" style="margin-top: 20px;">
+                    <h3 id="standard-values-title">Standard Resistor Pairs:</h3>
+                    
+                    <div class="sort-controls">
+                        <span>Sort by:</span>
+                        <button id="sort-by-ratio" class="sort-button active">Ratio Error</button>
+                        <button id="sort-by-current" class="sort-button">Current Error</button>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="standard-values-table" class="standard-pairs-table">
+                            <thead>
+                                <tr>
+                                    <th>Top R (Ω)</th>
+                                    <th>Bottom R (Ω)</th>
+                                    <th>Ratio</th>
+                                    <th>Ratio Error</th>
+                                    <th>Vmid (V)</th>
+                                    <th>Current (mA)</th>
+                                    <th>Current Error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="placeholder-row">
+                                    <td colspan="7">Select a tolerance button to see standard resistor pairs</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="calculator.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/calculator-registry.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/calculators/divider.js"></script>
+    <script src="js/calculators/buck.js"></script>
+    <script src="js/calculators/buck-boost.js"></script>
 </body>
 </html> 
