@@ -6,17 +6,25 @@
  */
 
 /**
- * Gets a numeric value from an input field
+ * Gets a numeric value from an input field with full precision
  * 
  * @param {string} id - The HTML element ID of the input field
  * @returns {number|null} - The parsed numeric value or null if empty
  * 
  * @example
- * // Get value from input with id "calculator-param"
+ * // Get precise value from input with id "calculator-param"
  * const paramValue = utils.getValue('calculator-param');
  */
 function getValue(id) {
-    const value = document.getElementById(id).value;
+    const element = document.getElementById(id);
+    if (!element) return null;
+    
+    // If we have a stored precise value, use that
+    if (element.dataset.preciseValue !== undefined) {
+        return parseFloat(element.dataset.preciseValue);
+    }
+    // Otherwise fall back to the input value
+    const value = element.value;
     return value === '' ? null : parseFloat(value);
 }
 
@@ -32,7 +40,13 @@ function getValue(id) {
  * utils.setValue('calculator-result', 10.12345, 3); // Sets "10.123"
  */
 function setValue(id, value, decimals = 2) {
-    document.getElementById(id).value = parseFloat(value).toFixed(decimals);
+    const element = document.getElementById(id);
+    if (element) {
+        // Store the full precision value as a data attribute
+        element.dataset.preciseValue = value;
+        // Format the displayed value with specified decimals
+        element.value = parseFloat(value).toFixed(decimals);
+    }
 }
 
 /**

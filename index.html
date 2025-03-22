@@ -141,21 +141,21 @@
                 
                 <div class="input-group">
                     <label for="div-vtop">Top Voltage:</label>
-                    <input type="number" id="div-vtop" step="0.1">
+                    <input type="number" id="div-vtop" step="0.001">
                     <span class="unit">V</span>
                     <button class="calc-button" onclick="calculateDivider('vtop')">Calculate</button>
                 </div>
 
                 <div class="input-group">
                     <label for="div-vmid">Middle Voltage:</label>
-                    <input type="number" id="div-vmid" step="0.1">
+                    <input type="number" id="div-vmid" step="0.001">
                     <span class="unit">V</span>
                     <button class="calc-button" onclick="calculateDivider('vmid')">Calculate</button>
                 </div>
 
                 <div class="input-group">
                     <label for="div-vbot">Bottom Voltage:</label>
-                    <input type="number" id="div-vbot" step="0.1">
+                    <input type="number" id="div-vbot" step="0.001">
                     <span class="unit">V</span>
                     <button class="calc-button" onclick="calculateDivider('vbot')">Calculate</button>
                 </div>
@@ -202,6 +202,7 @@
                         <span>Sort by:</span>
                         <button id="sort-by-ratio" class="sort-button active">Ratio Error</button>
                         <button id="sort-by-current" class="sort-button">Current Error</button>
+                        <button id="sort-by-topR" class="sort-button">Top R Value</button>
                     </div>
                     
                     <div class="table-container">

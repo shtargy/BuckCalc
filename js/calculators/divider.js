@@ -1,13 +1,20 @@
+/**
+ * Resistor Divider Calculator
+ *
+ * Provides functionality to calculate resistor divider parameters
+ * and find standard resistor pairs that match a desired voltage ratio.
+ * Features:
+ * - Calculate voltage divider components based on input/output voltages
+ * - Find standard resistor pairs from E24/E96/E192 series
+ * - Sort results by ratio error, current error, or resistor value
+ */
+
 // Resistor Divider Calculator Functions
 
 // Standard resistor values for different tolerance series
 const E24_VALUES = [
     1.0, 1.1, 1.2, 1.3, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.7, 3.0,
     3.3, 3.6, 3.9, 4.3, 4.7, 5.1, 5.6, 6.2, 6.8, 7.5, 8.2, 9.1
-];
-
-const E12_VALUES = [
-    1.0, 1.2, 1.5, 1.8, 2.2, 2.7, 3.3, 3.9, 4.7, 5.6, 6.8, 8.2
 ];
 
 const E96_VALUES = [
@@ -46,48 +53,52 @@ function generateStandardValues(baseValues) {
     return values;
 }
 
+// Cache for standard values to avoid recalculation
+const standardValuesCache = {
+    '0.1': null, // E192 series
+    '1': null,   // E96 series
+    '5': null    // E24 series
+};
+
 // Helper function to get standard values based on tolerance
 function getStandardValues(tolerance) {
-    console.log(`Getting standard values for tolerance: ${tolerance}, type: ${typeof tolerance}`);
-    
     // Ensure tolerance is treated as a string for comparison
     const tolStr = String(tolerance);
-    
+   
+    // Check cache first
+    if (standardValuesCache[tolStr]) {
+        return standardValuesCache[tolStr];
+    }
+   
+    let values;
     switch(tolStr) {
         case "0.1":
-            console.log("Using E192 series for 0.1% tolerance");
-            return generateStandardValues(E192_VALUES); // 0.1% uses E192 series
+            values = generateStandardValues(E192_VALUES);
+            break;
         case "1":
-            console.log("Using E96 series for 1% tolerance");
-            return generateStandardValues(E96_VALUES); // 1% uses E96 series
+            values = generateStandardValues(E96_VALUES);
+            break;
         case "5":
-            console.log("Using E24 series for 5% tolerance");
-            return generateStandardValues(E24_VALUES); // 5% uses E24 series
         default:
-            console.log(`Defaulting to E24 series for unknown tolerance: ${tolStr}`);
-            return generateStandardValues(E24_VALUES);
+            values = generateStandardValues(E24_VALUES);
+            break;
     }
+   
+    // Cache the values for future use
+    standardValuesCache[tolStr] = values;
+    return values;
 }
 
 // Find nearest standard value based on tolerance
 function findNearestStandardValue(value, tolerance) {
     const standardValues = getStandardValues(tolerance);
-    
-    // Initially set to extremes to ensure they'll be replaced
-    let bestValue = standardValues[0];
-    let bestError = Infinity;
-    
-    // Search through all standard values
-    for (const stdValue of standardValues) {
-        // Calculate error using logarithmic comparison for better resistor value matching
-        const error = Math.abs(Math.log10(value) - Math.log10(stdValue));
-        if (error < bestError) {
-            bestError = error;
-            bestValue = stdValue;
-        }
-    }
-    
-    return bestValue;
+   
+    // Find value with smallest logarithmic distance
+    return standardValues.reduce((best, current) => {
+        const bestError = Math.abs(Math.log10(best) - Math.log10(value));
+        const currentError = Math.abs(Math.log10(current) - Math.log10(value));
+        return currentError < bestError ? current : best;
+    }, standardValues[0]);
 }
 
 // Helper function to calculate Vmid
@@ -119,6 +130,9 @@ function getValue(id) {
 function setValue(id, value) {
     const element = document.getElementById(id);
     if (element) {
+        // Store full precision internally
+        element.dataset.preciseValue = value;
+        // Format display with 3 decimal places
         element.value = Number(value).toFixed(3);
         updateCurrentAndPower();
         updateResistorRatio();
@@ -131,11 +145,11 @@ function updateCurrentAndPower() {
     const vbot = utils.getValue('div-vbot');
     const rtop = utils.getValue('div-rtop');
     const rbot = utils.getValue('div-rbot');
-    
+   
     if (vtop !== null && vbot !== null && rtop !== null && rbot !== null &&
         !isNaN(vtop) && !isNaN(vbot) && !isNaN(rtop) && !isNaN(rbot) &&
         rtop > 0 && rbot > 0) {
-        
+       
         const current = Math.abs((vtop - vbot) / (rtop + rbot));
         const ptop = current * current * rtop;
         const pbot = current * current * rbot;
@@ -150,7 +164,7 @@ function updateCurrentAndPower() {
 function updateResistorRatio() {
     const rtop = utils.getValue('div-rtop');
     const rbot = utils.getValue('div-rbot');
-    
+   
     if (rtop !== null && rbot !== null && rbot !== 0) {
         const ratio = rtop / rbot;
         document.getElementById('div-ratio').textContent = ratio.toFixed(4);
@@ -176,42 +190,42 @@ function calculateDivider(target) {
         switch (target) {
             case 'rtop':
                 if (!utils.validateInputs(
-                    [vtop, vmid, vbot, rbot], 
+                    [vtop, vmid, vbot, rbot],
                     ['Top Voltage', 'Middle Voltage', 'Bottom Voltage', 'Bottom Resistor']
                 )) {
                     return;
                 }
-                
+               
                 const rtopVal = calculateRtop(vtop, vmid, vbot, rbot);
                 if (rtopVal <= 0) throw new Error('Invalid result: Top resistor must be positive');
-                utils.setValue('div-rtop', rtopVal);
+                utils.setValue('div-rtop', rtopVal, 2);
                 break;
 
             case 'rbot':
                 if (!utils.validateInputs(
-                    [vtop, vmid, vbot, rtop], 
+                    [vtop, vmid, vbot, rtop],
                     ['Top Voltage', 'Middle Voltage', 'Bottom Voltage', 'Top Resistor']
                 )) {
                     return;
                 }
-                
+               
                 const rbotVal = calculateRbot(vtop, vmid, vbot, rtop);
                 if (rbotVal <= 0) throw new Error('Invalid result: Bottom resistor must be positive');
-                utils.setValue('div-rbot', rbotVal);
+                utils.setValue('div-rbot', rbotVal, 2);
                 break;
 
             case 'vmid':
                 if (!utils.validateInputs(
-                    [vtop, vbot, rtop, rbot], 
+                    [vtop, vbot, rtop, rbot],
                     ['Top Voltage', 'Bottom Voltage', 'Top Resistor', 'Bottom Resistor']
                 )) {
                     return;
                 }
-                
+               
                 // Only recalculate Vmid if it wasn't our target value
                 if (lastCalculated !== 'rtop' && lastCalculated !== 'rbot') {
                     const vmidVal = calculateVmid(vtop, vbot, rtop, rbot);
-                    utils.setValue('div-vmid', vmidVal);
+                    utils.setValue('div-vmid', vmidVal, 3);
                 }
                 break;
         }
@@ -226,171 +240,281 @@ function calculateDivider(target) {
 let lastFoundPairs = [];
 let currentSortBy = 'ratio'; // Default sort
 
+// Get nearby standard values from target value
+function getNearbyStandardValues(standardValues, targetValue) {
+    // Get unique base values (between 1 and 10) from the standard values
+    const baseValues = extractBaseValues(standardValues);
+   
+    // Determine the decade and base value of the target
+    const targetExponent = Math.floor(Math.log10(targetValue));
+    const targetBaseValue = targetValue / Math.pow(10, targetExponent);
+   
+    // Build a sequential list of all standard values across all decades
+    const allSequentialValues = buildSequentialValues(baseValues);
+   
+    // Find the closest value to our target in the full sequence
+    const closestIndex = findClosestValueIndex(
+        allSequentialValues.map(item => item.value),
+        targetValue,
+        true // Use logarithmic comparison
+    );
+   
+    const closestValue = allSequentialValues[closestIndex].value;
+   
+    // Use fixed window size of 10 values in each direction
+    const windowSize = 10;
+   
+    // Take a window of values around the closest match
+    const startIndex = Math.max(0, closestIndex - windowSize);
+    const endIndex = Math.min(allSequentialValues.length - 1, closestIndex + windowSize);
+   
+    // Extract the window of values
+    const result = [];
+    for (let i = startIndex; i <= endIndex; i++) {
+        result.push(allSequentialValues[i].value);
+    }
+   
+    return result;
+}
+
+// Helper function to extract unique base values from standard values
+function extractBaseValues(standardValues) {
+    const baseValues = [];
+    const usedBaseValues = new Set();
+   
+    for (const value of standardValues) {
+        const exponent = Math.floor(Math.log10(value));
+        const baseValue = value / Math.pow(10, exponent);
+       
+        // Use string comparison to avoid floating point precision issues
+        if (!usedBaseValues.has(baseValue.toFixed(6))) {
+            baseValues.push(baseValue);
+            usedBaseValues.add(baseValue.toFixed(6));
+        }
+    }
+   
+    // Sort the base values
+    return baseValues.sort((a, b) => a - b);
+}
+
+// Helper function to find the index of the closest value in an array
+function findClosestValueIndex(values, targetValue, useLogarithmic = false) {
+    let closestIndex = 0;
+    let closestError = Infinity;
+   
+    for (let i = 0; i < values.length; i++) {
+        // Calculate error - either direct or logarithmic comparison
+        const error = useLogarithmic
+            ? Math.abs(Math.log10(values[i]) - Math.log10(targetValue))
+            : Math.abs(values[i] - targetValue);
+           
+        if (error < closestError) {
+            closestError = error;
+            closestIndex = i;
+        }
+    }
+   
+    return closestIndex;
+}
+
+// Helper function to build a sequence of all standard values across decades
+function buildSequentialValues(baseValues) {
+    const allSequentialValues = [];
+   
+    // Generate values for decades from 10^0 to 10^6
+    for (let exp = 0; exp <= 6; exp++) {
+        for (const base of baseValues) {
+            allSequentialValues.push({
+                value: base * Math.pow(10, exp),
+                baseValue: base,
+                exponent: exp
+            });
+        }
+    }
+   
+    // Sort all values
+    return allSequentialValues.sort((a, b) => a.value - b.value);
+}
+
 // Find optimal standard value resistor pairs
 function findStandardPairs(tolerance) {
-    console.log(`Finding standard pairs for tolerance: ${tolerance}%`);
-    
     // Get and validate input values
+    const values = getAndValidateInputValues();
+    if (!values) {
+        return []; // Return empty array instead of object
+    }
+   
+    const { vtop, vmid, vbot, rtop, rbot } = values;
+   
+    // Calculate target ratio and original values
+    const targetRatio = rtop / rbot;
+    const originalSum = rtop + rbot;
+    const originalCurrent = Math.abs((vtop - vbot) / originalSum);
+   
+    // Get standard values and error limit for the selected tolerance
+    const standardValues = getStandardValues(tolerance);
+    const errorLimit = getErrorLimit(tolerance);
+   
+    // Get candidate resistors around the originals
+    const topValues = getNearbyStandardValues(standardValues, rtop);
+    const bottomValues = getNearbyStandardValues(standardValues, rbot);
+   
+    // Find all valid pairs
+    const allPairs = findValidPairs(
+        topValues,
+        bottomValues,
+        { vtop, vmid, vbot, targetRatio, originalSum, originalCurrent },
+        errorLimit
+    );
+   
+    // If no acceptable pairs found, return empty result
+    if (allPairs.length === 0) {
+        return []; // Return empty array
+    }
+   
+    // Create sorted list
+    return createSortedLists(allPairs);
+}
+
+// Helper function to get and validate all input values
+function getAndValidateInputValues() {
     const vtop = utils.getValue('div-vtop');
     const vmid = utils.getValue('div-vmid');
     const vbot = utils.getValue('div-vbot');
     const rtop = utils.getValue('div-rtop');
     const rbot = utils.getValue('div-rbot');
-    
+   
     // Validate values
-    if (!utils.validateInputs(vtop, vmid, vbot, rtop, rbot)) {
-        return [];
+    if (!validateInputs(vtop, vmid, vbot, rtop, rbot)) {
+        return null;
     }
-    
-    // Calculate target ratio and original sum (for current reference)
-    const targetRatio = rtop / rbot;
-    const originalSum = rtop + rbot;
-    
-    console.log(`Target ratio: ${targetRatio.toFixed(6)}, Original sum: ${originalSum.toFixed(2)} Ω`);
-    
-    // Get standard values for the selected tolerance
-    const standardValues = getStandardValues(tolerance);
-    
-    // Find the decades of the target resistors
-    const rtopDecade = Math.floor(Math.log10(rtop));
-    const rbotDecade = Math.floor(Math.log10(rbot));
-    
-    // Get lists of top and bottom resistor values to consider
-    const topValues = getNearbyStandardValues(standardValues, rtop, rtopDecade);
-    const bottomValues = getNearbyStandardValues(standardValues, rbot, rbotDecade);
-    
-    console.log(`Using ${topValues.length} standard values around Rtop and ${bottomValues.length} around Rbot`);
-    
-    // Generate all possible combinations and calculate their properties
-    const pairs = generatePairs(topValues, bottomValues, vtop, vbot, vmid, targetRatio, originalSum);
-    
-    // Filter to pairs with acceptable ratio errors for the given tolerance
-    const ratioErrorLimit = getErrorLimit(tolerance);
-    const acceptablePairs = pairs.filter(pair => Math.abs(pair.ratioError) <= ratioErrorLimit);
-    
-    // If we don't have enough pairs, relax the constraint
-    const goodPairs = acceptablePairs.length >= 10 ? acceptablePairs : pairs;
-    
-    // First sort by ratio error, then take top 20
-    goodPairs.sort((a, b) => Math.abs(a.ratioError) - Math.abs(b.ratioError));
-    const topRatioPairs = goodPairs.slice(0, 20);
-    
-    // Then sort those by sum error (to keep current close to original)
-    topRatioPairs.sort((a, b) => Math.abs(a.sumError) - Math.abs(b.sumError));
-    
-    // Return the top 10 pairs
-    return topRatioPairs.slice(0, 10);
+   
+    return { vtop, vmid, vbot, rtop, rbot };
 }
 
-// Helper functions for findStandardPairs
-function validateInputs(vtop, vmid, vbot, rtop, rbot) {
-    if (vtop === null || vmid === null || vbot === null || rtop === null || rbot === null) {
-        alert('Please ensure all values are entered and valid');
-        return false;
-    }
-    
-    if (rtop <= 0 || rbot <= 0) {
-        alert('Resistances must be positive');
-        return false;
-    }
-    
-    if (vtop <= vmid || vmid <= vbot) {
-        alert('Voltage relationships must be: Vtop > Vmid > Vbot');
-        return false;
-    }
-    
-    return true;
-}
-
-function getNearbyStandardValues(standardValues, targetValue, targetDecade) {
-    const numNeighbors = 10;
-    
-    // Filter to values in relevant decades
-    const relevantValues = standardValues.filter(v => {
-        const decade = Math.floor(Math.log10(v));
-        return Math.abs(decade - targetDecade) <= 1;
-    });
-    
-    // Find values above and below the target
-    const valuesAbove = relevantValues
-        .filter(v => v >= targetValue)
-        .sort((a, b) => a - b)
-        .slice(0, numNeighbors);
-    
-    const valuesBelow = relevantValues
-        .filter(v => v < targetValue)
-        .sort((a, b) => b - a)
-        .slice(0, numNeighbors);
-    
-    // Combine and ensure we have enough values
-    let result = [...valuesBelow, ...valuesAbove];
-    
-    if (result.length < numNeighbors) {
-        // If we don't have enough values, add more from nearest decades
-        const additionalValues = standardValues
-            .filter(v => !result.includes(v) && Math.abs(Math.log10(v) - Math.log10(targetValue)) < 1)
-            .sort((a, b) => 
-                Math.abs(Math.log10(a) - Math.log10(targetValue)) - 
-                Math.abs(Math.log10(b) - Math.log10(targetValue))
-            )
-            .slice(0, numNeighbors - result.length);
-        
-        result = [...result, ...additionalValues];
-    }
-    
-    return result;
-}
-
-function generatePairs(topValues, bottomValues, vtop, vbot, vmid, targetRatio, originalSum) {
-    const pairs = [];
-    
+// Find all valid resistor pairs
+function findValidPairs(topValues, bottomValues, originalValues, errorLimit) {
+    const { vtop, vmid, vbot, targetRatio, originalSum, originalCurrent } = originalValues;
+    const allPairs = [];
+   
     for (const tryRtop of topValues) {
         for (const tryRbot of bottomValues) {
             // Calculate ratio and error
             const ratio = tryRtop / tryRbot;
-            const ratioError = ((ratio - targetRatio) / targetRatio) * 100;
-            
-            // Calculate resulting Vmid
-            const resultVmid = calculateVmid(vtop, vbot, tryRtop, tryRbot);
-            const vmidError = ((resultVmid - vmid) / vmid) * 100;
-            
-            // Calculate current-related metrics
-            const sum = tryRtop + tryRbot;
-            const sumError = ((sum - originalSum) / originalSum) * 100;
-            const current = Math.abs((vtop - vbot) / sum);
-            const originalCurrent = Math.abs((vtop - vbot) / originalSum);
-            const currentError = ((current - originalCurrent) / originalCurrent) * 100;
-            
-            pairs.push({
-                rtop: tryRtop,
-                rbot: tryRbot,
-                vmid: resultVmid,
-                ratio: ratio,
-                ratioError: ratioError,
-                sumError: sumError,
-                vmidError: vmidError,
-                current: current,
-                currentError: currentError
-            });
+            const ratioError = calculatePercentError(ratio, targetRatio);
+           
+            // Calculate metrics for all pairs
+            const pairData = calculatePairMetrics(
+                tryRtop, tryRbot, vtop, vbot, vmid,
+                ratio, ratioError, originalSum, originalCurrent
+            );
+            allPairs.push(pairData);
         }
     }
-    
-    return pairs;
+   
+    return allPairs;
 }
+
+// Calculate all metrics for a resistor pair
+function calculatePairMetrics(rtop, rbot, vtop, vbot, vmid, ratio, ratioError, originalSum, originalCurrent) {
+    // Calculate resulting Vmid
+    const resultVmid = calculateVmid(vtop, vbot, rtop, rbot);
+   
+    // Calculate current-related metrics
+    const sum = rtop + rbot;
+    const current = Math.abs((vtop - vbot) / sum);
+   
+    return {
+        rtop,
+        rbot,
+        vmid: resultVmid,
+        ratio,
+        ratioError,
+        sumError: calculatePercentError(sum, originalSum),
+        vmidError: calculatePercentError(resultVmid, vmid),
+        current,
+        currentError: calculatePercentError(current, originalCurrent)
+    };
+}
+
+// Generic function to calculate percent error
+function calculatePercentError(actual, expected) {
+    return ((actual - expected) / expected) * 100;
+}
+
+// Create sorted lists of resistor pairs
+function createSortedLists(allPairs) {
+    // Sort by absolute ratio error and take top 20 pairs
+    const bestPairs = [...allPairs].sort((a, b) =>
+        Math.abs(a.ratioError) - Math.abs(b.ratioError)
+    ).slice(0, 20);
+   
+    // Return just these best pairs
+    return bestPairs;
+}
+
+// Helper functions for findStandardPairs
+function validateInputs(vtop, vmid, vbot, rtop, rbot) {
+    // Check that all values are present and valid
+    if (isAnyValueInvalid([vtop, vmid, vbot, rtop, rbot])) {
+        alert('Please ensure all values are entered and valid');
+        return false;
+    }
+   
+    // Check resistor values
+    if (rtop <= 0 || rbot <= 0) {
+        alert('Resistances must be positive');
+        return false;
+    }
+   
+    // Check voltage relationships
+    if (!isValidVoltageRange(vtop, vmid, vbot)) {
+        alert('Voltage relationships must be: Vtop > Vmid > Vbot');
+        return false;
+    }
+   
+    return true;
+}
+
+// Check if any value is null, undefined, NaN, or empty
+function isAnyValueInvalid(values) {
+    return values.some(value =>
+        value === null ||
+        value === undefined ||
+        isNaN(value)
+    );
+}
+
+// Check if voltages are in correct ascending order
+function isValidVoltageRange(vtop, vmid, vbot) {
+    return vtop > vmid && vmid > vbot;
+}
+
+// Define error limits for different tolerance classes (for display purposes only)
+const ERROR_LIMITS = {
+    '0.1': { description: '0.1% (E192 series)', limit: 1.0 },
+    '1': { description: '1% (E96 series)', limit: 4.0 },
+    '5': { description: '5% (E24 series)', limit: 15.0 }
+};
 
 function getErrorLimit(tolerance) {
-    // Return appropriate error limits based on resistor tolerance
-    switch(tolerance) {
-        case '0.1': return 1.0; // 0.1% resistors
-        case '1': return 2.0;   // 1% resistors
-        default: return 5.0;    // 5% resistors or other
-    }
+    // Ensure tolerance is treated as a string for comparison
+    const tolStr = String(tolerance);
+   
+    // Get limit from defined constants, or use default
+    const errorConfig = ERROR_LIMITS[tolStr] || ERROR_LIMITS['5'];
+    return errorConfig.limit;
 }
 
-// Populate the standard value pairs table
+// Keep track of the current tolerance selection
+let currentTolerance = '5'; // Default to 5%
+
+/**
+ * Populates the standard value pairs table based on the selected tolerance.
+ *
+ * @param {string} tolerance - The tolerance value ('0.1', '1', or '5')
+ */
 function showStandardPairs(tolerance) {
-    console.log(`Showing standard pairs for ${tolerance}% tolerance`);
-    
     try {
         // Set default values if needed
         setDefaultValuesIfNeeded();
@@ -405,28 +529,36 @@ function showStandardPairs(tolerance) {
         
         const { container, table, tbody } = elements;
         
-        // Find standard pairs
-        const standardPairs = findStandardPairs(tolerance);
-        console.log(`Found ${standardPairs ? standardPairs.length : 0} standard pairs`);
+        // Get input values and validate
+        const values = getAndValidateInputValues();
+        if (!values) return;
         
-        if (!standardPairs || standardPairs.length === 0) {
-            showNoResultsMessage(tbody);
+        // Find standard resistor pairs
+        const { pairs } = findStandardPairs(
+            values.vtop, values.vmid, values.vbot,
+            values.rtop, values.rbot,
+            tolerance
+        );
+        
+        // Check if we have any valid pairs
+        if (!pairs || pairs.length === 0) {
+            showNoResultsMessage(tbody, tolerance);
             updateToleranceTitle(tolerance);
             return;
         }
         
         // Store the pairs for sorting later
-        lastFoundPairs = standardPairs;
+        lastFoundPairs = pairs;
         
         // Sort by the last used sorting criteria
-        sortAndDisplayPairs(lastFoundPairs, currentSortBy);
+        sortAndDisplayPairs(pairs);
         
         updateToleranceTitle(tolerance);
         
         // Set up sort button handlers
         setupSortButtons();
     } catch (error) {
-        console.error("Error in showStandardPairs:", error);
+        handleError("Error in showStandardPairs:", error);
         alert("Error generating standard pairs: " + error.message);
     }
 }
@@ -434,40 +566,40 @@ function showStandardPairs(tolerance) {
 // Helper functions for showing standard pairs
 function setDefaultValuesIfNeeded() {
     // Force any blank inputs to valid defaults before calculations
-    if (utils.getValue('div-vtop') === null) utils.setValue('div-vtop', "5");
-    if (utils.getValue('div-vmid') === null) utils.setValue('div-vmid', "2.5");
-    if (utils.getValue('div-vbot') === null) utils.setValue('div-vbot', "0");
-    if (utils.getValue('div-rtop') === null) utils.setValue('div-rtop', "10000");
-    if (utils.getValue('div-rbot') === null) utils.setValue('div-rbot', "10000");
+    if (utils.getValue('div-vtop') === null) utils.setValue('div-vtop', "5", 3);
+    if (utils.getValue('div-vmid') === null) utils.setValue('div-vmid', "2.5", 3);
+    if (utils.getValue('div-vbot') === null) utils.setValue('div-vbot', "0", 3);
+    if (utils.getValue('div-rtop') === null) utils.setValue('div-rtop', "10000", 2);
+    if (utils.getValue('div-rbot') === null) utils.setValue('div-rbot', "10000", 2);
 }
 
 function getRequiredDOMElements() {
     const container = document.getElementById('standard-values-container');
     if (!container) {
-        console.error("Container element not found!");
+        handleError("Container element not found!");
         alert("Error: Could not find the table container element");
         return null;
     }
 
     const table = document.getElementById('standard-values-table');
     if (!table) {
-        console.error("Table element not found!");
+        handleError("Table element not found!");
         alert("Error: Could not find the table element");
         return null;
     }
-    
+   
     const tbody = table.querySelector('tbody');
     if (!tbody) {
-        console.error("Table body element not found!");
+        handleError("Table body element not found!");
         alert("Error: Could not find the table body element");
         return null;
     }
-    
+   
     return { container, table, tbody };
 }
 
-function showNoResultsMessage(tbody) {
-    tbody.innerHTML = '<tr><td colspan="7">No valid pairs found. Please check your input values.</td></tr>';
+function showNoResultsMessage(tbody, tolerance) {
+    tbody.innerHTML = `<tr><td colspan="7">No valid resistor pairs found. Try adjusting your input values or selecting a different tolerance level.</td></tr>`;
 }
 
 function updateToleranceTitle(tolerance) {
@@ -475,51 +607,135 @@ function updateToleranceTitle(tolerance) {
 }
 
 // Function to sort and display pairs
-function sortAndDisplayPairs(pairs, sortBy) {
-    // Clone the pairs array to avoid modifying the original
-    const sortedPairs = [...pairs];
-    
-    // Sort by the specified criteria
-    if (sortBy === 'ratio') {
-        sortedPairs.sort((a, b) => Math.abs(a.ratioError) - Math.abs(b.ratioError));
-    } else if (sortBy === 'current') {
-        sortedPairs.sort((a, b) => Math.abs(a.currentError) - Math.abs(b.currentError));
+function sortAndDisplayPairs(pairs) {
+    if (!pairs || pairs.length === 0) {
+        // Display a message if no pairs found
+        const container = document.getElementById('div-pairs-container');
+        if (container) {
+            container.innerHTML = '<p class="no-pairs-message">No matching resistor pairs found. Try adjusting tolerance or voltage values.</p>';
+        } else {
+            handleError("Container element not found!");
+        }
+        return;
     }
     
-    // Get the table body and clear existing rows
-    const tbody = document.getElementById('standard-values-table').querySelector('tbody');
+    // Sort the pairs based on selected criteria
+    const sortedPairs = [...pairs].sort(createSortFunction(currentSortBy));
+    
+    // Get the table element
+    const table = document.getElementById('div-pairs-table');
+    if (!table) {
+        handleError("Table element not found!");
+        return;
+    }
+    
+    // Clear existing table rows
+    const tbody = table.querySelector('tbody');
+    if (!tbody) {
+        handleError("Table body element not found!");
+        return;
+    }
+    
     tbody.innerHTML = '';
     
-    // Add new rows
-    for (const pair of sortedPairs) {
-        createAndAppendTableRow(tbody, pair);
+    // Show container
+    const container = document.getElementById('div-pairs-container');
+    if (container) {
+        container.style.display = 'block';
+    }
+    
+    // Add pairs to table
+    addPairsToTable(tbody, sortedPairs);
+}
+
+// Function to create a sort function based on sort criteria
+function createSortFunction(sortBy) {
+    switch (sortBy) {
+        case 'ratio':
+            return (a, b) => Math.abs(a.ratioError) - Math.abs(b.ratioError);
+        case 'current':
+            return (a, b) => Math.abs(a.currentError) - Math.abs(b.currentError);
+        case 'topR':
+            return (a, b) => a.rtop - b.rtop;
+        default:
+            return (a, b) => Math.abs(a.ratioError) - Math.abs(b.ratioError);
     }
 }
 
+// Toggle sort order for standard pairs
+function sortPairs(sortBy) {
+    if (!lastFoundPairs || lastFoundPairs.length === 0) {
+        handleError("No valid pairs data provided to sortAndDisplayPairs");
+        return;
+    }
+    
+    // Set current sort mode
+    currentSortBy = sortBy;
+    
+    // Get table body
+    const tbody = document.getElementById('div-pairs-table').querySelector('tbody');
+    if (!tbody) {
+        handleError("Table body element not found");
+        return;
+    }
+    
+    // Clear existing rows
+    tbody.innerHTML = '';
+    
+    // Sort and add pairs
+    const sortedPairs = [...lastFoundPairs].sort(createSortFunction(sortBy));
+    addPairsToTable(tbody, sortedPairs);
+    
+    // Update sort button states
+    updateSortButtonStates(sortBy);
+}
+
+// Thresholds for different error classes
+const ERROR_THRESHOLDS = {
+    // Thresholds for ratio error (excellent, good, acceptable)
+    ratio: [0.05, 0.2, 0.5],
+    // Thresholds for current error (excellent, good, acceptable)
+    current: [1.0, 5.0, 10.0]
+};
+
+/**
+ * Determines the visual class for an error value
+ *
+ * @param {number} absError - The absolute error value
+ * @param {Array<number>} thresholds - Array of thresholds [excellent, good, acceptable]
+ * @param {string} prefix - Class name prefix
+ * @returns {string} CSS class name for the error
+ */
+function getErrorClass(absError, thresholds, prefix) {
+    if (absError < thresholds[0]) {
+        return `${prefix}-excellent`;
+    } else if (absError < thresholds[1]) {
+        return `${prefix}-good`;
+    } else if (absError < thresholds[2]) {
+        return `${prefix}-acceptable`;
+    } else {
+        return `${prefix}-poor`;
+    }
+}
+
+/**
+ * Creates and appends a table row for a resistor pair
+ *
+ * @param {HTMLTableSectionElement} tbody - Table body element
+ * @param {Object} pair - Resistor pair data object
+ */
 function createAndAppendTableRow(tbody, pair) {
     const row = document.createElement('tr');
-    
-    // Top Resistor
+   
+    // Add all cells to the row
     addCell(row, formatResistorValue(pair.rtop));
-    
-    // Bottom Resistor
     addCell(row, formatResistorValue(pair.rbot));
-    
-    // Resistor Ratio
     addCell(row, pair.ratio.toFixed(4));
-    
-    // Ratio Error
-    addErrorCell(row, pair.ratioError, getErrorClass(Math.abs(pair.ratioError), [0.1, 0.5, 1.0], 'error'));
-    
-    // Resulting Vmid
+    addErrorCell(row, pair.ratioError, getErrorClass(Math.abs(pair.ratioError), ERROR_THRESHOLDS.ratio, 'error'));
     addCell(row, pair.vmid.toFixed(3) + ' V');
-    
-    // Resulting Current
     addCell(row, (pair.current * 1000).toFixed(2) + ' mA');
-    
-    // Current Error
-    addErrorCell(row, pair.currentError, getErrorClass(Math.abs(pair.currentError), [1.0, 5.0, 10.0], 'current-error'));
-    
+    addErrorCell(row, pair.currentError, getErrorClass(Math.abs(pair.currentError), ERROR_THRESHOLDS.current, 'current-error'));
+   
     tbody.appendChild(row);
 }
 
@@ -534,60 +750,79 @@ function addCell(row, content) {
 function addErrorCell(row, errorValue, className) {
     const cell = document.createElement('td');
     const absError = Math.abs(errorValue);
-    
+   
     // Format with sign and precision
     const errorSign = errorValue < 0 ? "-" : "+";
     cell.textContent = `${errorSign}${absError.toFixed(2)}%`;
-    
+   
     // Add appropriate class
     cell.className = className;
-    
+   
     row.appendChild(cell);
     return cell;
-}
-
-function getErrorClass(absError, thresholds, prefix) {
-    if (absError < thresholds[0]) {
-        return `${prefix}-excellent`;
-    } else if (absError < thresholds[1]) {
-        return `${prefix}-good`;
-    } else if (absError < thresholds[2]) {
-        return `${prefix}-acceptable`;
-    } else {
-        return `${prefix}-poor`;
-    }
 }
 
 // Set up sort button event handlers
 function setupSortButtons() {
     const sortByRatioButton = document.getElementById('sort-by-ratio');
     const sortByCurrentButton = document.getElementById('sort-by-current');
-    
+    const sortByTopRButton = document.getElementById('sort-by-topR');
+   
     if (sortByRatioButton && sortByCurrentButton) {
         // Set initial active state based on current sort
-        sortByRatioButton.classList.toggle('active', currentSortBy === 'ratio');
-        sortByCurrentButton.classList.toggle('active', currentSortBy === 'current');
-        
+        updateSortButtonsState(sortByRatioButton, sortByCurrentButton, sortByTopRButton);
+       
         // Add click handlers
         sortByRatioButton.onclick = () => {
-            currentSortBy = 'ratio';
-            sortByRatioButton.classList.add('active');
-            sortByCurrentButton.classList.remove('active');
-            sortAndDisplayPairs(lastFoundPairs, currentSortBy);
+            updateActiveSortButton('ratio', sortByRatioButton, sortByCurrentButton, sortByTopRButton);
         };
-        
+       
         sortByCurrentButton.onclick = () => {
-            currentSortBy = 'current';
-            sortByCurrentButton.classList.add('active');
-            sortByRatioButton.classList.remove('active');
-            sortAndDisplayPairs(lastFoundPairs, currentSortBy);
+            updateActiveSortButton('current', sortByCurrentButton, sortByRatioButton, sortByTopRButton);
         };
+       
+        // Add handler for new topR button if it exists
+        if (sortByTopRButton) {
+            sortByTopRButton.onclick = () => {
+                updateActiveSortButton('topR', sortByTopRButton, sortByRatioButton, sortByCurrentButton);
+            };
+        }
     } else {
-        console.error("Sort buttons not found in the DOM");
+        handleError("Sort buttons not found in the DOM");
     }
 }
 
-// Format resistor value with appropriate prefix (Ω, kΩ, MΩ)
+// Update sort button visual state
+function updateSortButtonsState(ratioButton, currentButton, topRButton) {
+    ratioButton.classList.toggle('active', currentSortBy === 'ratio');
+    currentButton.classList.toggle('active', currentSortBy === 'current');
+    if (topRButton) {
+        topRButton.classList.toggle('active', currentSortBy === 'topR');
+    }
+}
+
+/**
+ * Updates the active sort button and performs sorting
+ *
+ * @param {string} sortType - Type of sorting ('ratio', 'current', or 'topR')
+ * @param {HTMLElement} activeButton - Button to make active
+ * @param {...HTMLElement} inactiveButtons - Buttons to make inactive
+ */
+function updateActiveSortButton(sortType, activeButton, ...inactiveButtons) {
+    currentSortBy = sortType;
+    activeButton.classList.add('active');
+    inactiveButtons.forEach(button => {
+        if (button) button.classList.remove('active');
+    });
+    sortAndDisplayPairs(lastFoundPairs);
+}
+
+/**
+ * Format a resistor value with the appropriate unit prefix (Ω, kΩ, MΩ)
+ *
+ * @param {number} value - The resistor value in ohms
+ * @returns {string} Formatted resistor value with appropriate unit
+ */
 function formatResistorValue(value) {
     if (value >= 1000000) {
         return (value / 1000000).toFixed(2) + ' MΩ';
@@ -598,44 +833,54 @@ function formatResistorValue(value) {
     }
 }
 
-// Add input event listeners to update values and table
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("DOMContentLoaded event fired for resistor divider calculator");
-    
+// Initialize the calculator when the DOM is loaded
+document.addEventListener('DOMContentLoaded', initializeCalculator);
+
+// Main initialization function
+function initializeCalculator() {
+    // Set up input event listeners
+    setupInputListeners();
+   
+    // Initial calculation
+    updateResistorRatio();
+   
+    // Set up standard value button event listeners
+    setupStandardValueButtons();
+}
+
+// Set up input field event listeners
+function setupInputListeners() {
     const inputs = ['div-vtop', 'div-vmid', 'div-vbot', 'div-rtop', 'div-rbot'];
+   
     inputs.forEach(id => {
         const element = document.getElementById(id);
         if (element) {
             element.addEventListener('input', updateResistorRatio);
-            console.log(`Added input event listener to ${id}`);
         } else {
-            console.error(`Element ${id} not found!`);
+            handleError(`Element ${id} not found!`);
         }
     });
-    updateResistorRatio();
-    
-    // Add standard value button event listeners
+}
+
+// Set up standard value button event listeners
+function setupStandardValueButtons() {
     const standardButtons = [
         { id: 'standard-01', tolerance: '0.1' },
         { id: 'standard-1', tolerance: '1' },
         { id: 'standard-5', tolerance: '5' }
     ];
-    
+   
     standardButtons.forEach(button => {
         const element = document.getElementById(button.id);
         if (element) {
             element.addEventListener('click', function() {
-                console.log(`${button.id} clicked, showing ${button.tolerance}% standard pairs`);
                 showStandardPairs(button.tolerance);
             });
-            console.log(`Added click event listener to ${button.id}`);
         } else {
-            console.error(`Button element ${button.id} not found!`);
+            handleError(`Button element ${button.id} not found!`);
         }
     });
-    
-    console.log("Resistor divider calculator initialization complete");
-});
+}
 
 // Mark this calculator as loaded
 window.dividerLoaded = true;
@@ -662,4 +907,41 @@ if (window.calculatorRegistry) {
 window.calculateDivider = calculateDivider;
 window.findStandardPairs = findStandardPairs;
 window.updateCurrentAndPower = updateCurrentAndPower;
-window.updateResistorRatio = updateResistorRatio; 
+window.updateResistorRatio = updateResistorRatio;
+
+// Production-appropriate error handling
+function handleError(message, error = null) {
+    // Only log to console in development environments
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        if (error) {
+            console.error(message, error);
+        } else {
+            console.error(message);
+        }
+    }
+    // For production, we could send errors to a monitoring service here
+}
+
+// Add pairs to table
+function addPairsToTable(tbody, pairs) {
+    if (pairs.length === 0) {
+        showNoResultsMessage(tbody, getSelectedTolerance());
+        return;
+    }
+    
+    // Add new rows
+    for (const pair of pairs) {
+        createAndAppendTableRow(tbody, pair);
+    }
+}
+
+// Get the currently selected tolerance from radio buttons
+function getSelectedTolerance() {
+    const toleranceRadios = document.querySelectorAll('input[name="div-tolerance"]');
+    for (const radio of toleranceRadios) {
+        if (radio.checked) {
+            return parseFloat(radio.value);
+        }
+    }
+    return 1; // Default to 1% if none selected
+}
