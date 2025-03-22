@@ -341,7 +341,7 @@ function findStandardPairs(tolerance) {
     // Get and validate input values
     const values = getAndValidateInputValues();
     if (!values) {
-        return []; // Return empty array instead of object
+        return { pairs: [] }; // Return object with empty pairs array
     }
    
     const { vtop, vmid, vbot, rtop, rbot } = values;
@@ -369,11 +369,14 @@ function findStandardPairs(tolerance) {
    
     // If no acceptable pairs found, return empty result
     if (allPairs.length === 0) {
-        return []; // Return empty array
+        return { pairs: [] };
     }
    
-    // Create sorted list
-    return createSortedLists(allPairs);
+    // Create sorted list of best pairs
+    const bestPairs = createSortedLists(allPairs);
+    
+    // Return as object with pairs property
+    return { pairs: bestPairs };
 }
 
 // Helper function to get and validate all input values
@@ -515,6 +518,9 @@ let currentTolerance = '5'; // Default to 5%
  * @param {string} tolerance - The tolerance value ('0.1', '1', or '5')
  */
 function showStandardPairs(tolerance) {
+    // Save the current tolerance selection
+    currentTolerance = tolerance;
+    
     try {
         // Set default values if needed
         setDefaultValuesIfNeeded();
@@ -534,24 +540,24 @@ function showStandardPairs(tolerance) {
         if (!values) return;
         
         // Find standard resistor pairs
-        const { pairs } = findStandardPairs(
+        const standardPairsResult = findStandardPairs(
             values.vtop, values.vmid, values.vbot,
             values.rtop, values.rbot,
             tolerance
         );
         
         // Check if we have any valid pairs
-        if (!pairs || pairs.length === 0) {
+        if (!standardPairsResult || standardPairsResult.pairs.length === 0) {
             showNoResultsMessage(tbody, tolerance);
             updateToleranceTitle(tolerance);
             return;
         }
         
         // Store the pairs for sorting later
-        lastFoundPairs = pairs;
+        lastFoundPairs = standardPairsResult.pairs;
         
         // Sort by the last used sorting criteria
-        sortAndDisplayPairs(pairs);
+        sortAndDisplayPairs(lastFoundPairs);
         
         updateToleranceTitle(tolerance);
         
