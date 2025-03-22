@@ -1,15 +1,38 @@
+/**
+ * Buck Converter Calculator (v1.0.0)
+ *
+ * Provides functionality to calculate buck converter parameters such as:
+ * - Input voltage (Vin)
+ * - Output voltage (Vout)
+ * - Inductor value
+ * - Switching frequency
+ * - Inductor current ripple
+ * - Duty cycle
+ * 
+ * This module handles all the mathematical calculations for buck converters,
+ * allowing users to solve for any parameter by providing the others.
+ * 
+ * Usage:
+ * - Each function calculates one parameter based on the other parameters
+ * - Input values are obtained from HTML form elements
+ * - Results are displayed in the corresponding HTML form elements
+ * - All functions use common utilities from utils.js for consistency
+ */
+
 // Buck Converter Calculator Functions
 
 // Helper function to get numeric value from an input field
-function getValue(id) {
-    const value = document.getElementById(id).value;
-    return value === '' ? null : parseFloat(value);
-}
+// Redundant - use utils.getValue instead
+// function getValue(id) {
+//     const value = document.getElementById(id).value;
+//     return value === '' ? null : parseFloat(value);
+// }
 
 // Helper function to set a formatted value to an input field
-function setValue(id, value) {
-    document.getElementById(id).value = parseFloat(value).toFixed(2);
-}
+// Redundant - use utils.setValue instead
+// function setValue(id, value) {
+//     document.getElementById(id).value = parseFloat(value).toFixed(2);
+// }
 
 // Calculate duty cycle
 function calculateDutyCycle() {

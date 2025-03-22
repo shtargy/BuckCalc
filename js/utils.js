@@ -84,6 +84,34 @@ function validateInputs(fields, fieldNames) {
 }
 
 /**
+ * Validates that a value is positive
+ * Shows an alert if validation fails
+ * 
+ * @param {number|null} value - The value to validate
+ * @param {string} fieldName - Name of the field (for error messages)
+ * @returns {boolean} - True if value is positive, false otherwise
+ * 
+ * @example
+ * // Validate that voltage is positive
+ * if (!utils.validatePositive(voltage, 'Input Voltage')) {
+ *     return; // Exit early if validation fails
+ * }
+ */
+function validatePositive(value, fieldName) {
+    if (value === null || isNaN(value)) {
+        alert(`Please enter a value for: ${fieldName}`);
+        return false;
+    }
+    
+    if (value <= 0) {
+        alert(`${fieldName} must be positive`);
+        return false;
+    }
+    
+    return true;
+}
+
+/**
  * Converts frequency from MHz to Hz
  * 
  * @param {number} mhz - Frequency in MHz
@@ -114,6 +142,7 @@ window.utils = {
     getValue,
     setValue,
     validateInputs,
+    validatePositive,
     mhzToHz,
     hzToMhz
 }; 

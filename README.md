@@ -82,4 +82,38 @@ Example:
     - `buck.js` - Buck converter calculator
     - `buck-boost.js` - Inverting buck-boost calculator
     - `divider.js` - Resistor divider calculator
-- `CALCULATOR_ARCHITECTURE.md` - Detailed architecture documentation 
+- `CALCULATOR_ARCHITECTURE.md` - Detailed architecture documentation
+
+## User Instructions
+
+### Using the Buck Converter Calculator
+1. Select the "Buck Converter" from the sidebar
+2. Enter the known parameters (at least 3 of the following):
+   - Input Voltage (Vin)
+   - Output Voltage (Vout)
+   - Inductor Value
+   - Switching Frequency
+   - Current Ripple
+3. Click the "Calculate" button next to the parameter you want to compute
+4. The result will appear in the corresponding input field
+5. Optional: Enter diode voltage drops for more accurate calculations
+
+### Using the Inverting Buck-Boost Calculator
+1. Select the "Inverting Buck-Boost" from the sidebar
+2. Enter the known parameters based on what you want to calculate
+3. Click the "Calculate" button next to the parameter you want to compute
+4. The calculator will determine the missing parameter based on the provided inputs
+
+### Using the Resistor Divider Calculator
+1. Select the "Resistor Divider" from the sidebar
+2. Enter your target input voltage, output voltage, and current (optional)
+3. Select the preferred resistor series (E24, E96, or E192)
+4. Click "Calculate" to generate a list of standard resistor pairs
+5. Use the "Sort by" options to find the best resistor pair for your needs
+6. The results include ratio error, current, and power information
+
+Tips:
+- For all calculators, you must enter the required input fields (marked with *)
+- Results are displayed with 2 decimal places for readability
+- Use the sidebar to switch between different calculators at any time
+- Clear the fields and start over if you want to perform new calculations 

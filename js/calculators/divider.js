@@ -1,12 +1,17 @@
 /**
- * Resistor Divider Calculator
+ * Resistor Divider Calculator (v1.2.0)
  *
  * Provides functionality to calculate resistor divider parameters
  * and find standard resistor pairs that match a desired voltage ratio.
+ * 
  * Features:
  * - Calculate voltage divider components based on input/output voltages
  * - Find standard resistor pairs from E24/E96/E192 series
  * - Sort results by ratio error, current error, or resistor value
+ * - Maintain high precision calculations with friendly display formatting
+ * - Color-coded error indication for easy evaluation of results
+ * 
+ * Last updated: 2023-07-10
  */
 
 // Resistor Divider Calculator Functions
@@ -101,23 +106,77 @@ function findNearestStandardValue(value, tolerance) {
     }, standardValues[0]);
 }
 
-// Helper function to calculate Vmid
+/**
+ * Calculates the middle voltage in a resistor divider
+ * 
+ * @param {number} vtop - Top voltage
+ * @param {number} vbot - Bottom voltage
+ * @param {number} rtop - Top resistor value (ohms)
+ * @param {number} rbot - Bottom resistor value (ohms)
+ * @returns {number} The middle voltage at the divider point
+ */
 function calculateVmid(vtop, vbot, rtop, rbot) {
     return vbot + (rbot/(rtop + rbot)) * (vtop - vbot);
 }
 
-// Helper function to calculate Rtop
+/**
+ * Calculates the top resistor value in a voltage divider
+ * 
+ * @param {number} vtop - Top voltage
+ * @param {number} vmid - Middle voltage (output)
+ * @param {number} vbot - Bottom voltage
+ * @param {number} rbot - Bottom resistor value (ohms)
+ * @returns {number} The required top resistor value (ohms)
+ */
 function calculateRtop(vtop, vmid, vbot, rbot) {
     // For a voltage divider, Vmid = Vbot + (Rbot/(Rtop+Rbot)) * (Vtop-Vbot)
     // Solve for Rtop: Rtop = Rbot * (Vtop-Vmid) / (Vmid-Vbot)
     return rbot * (vtop - vmid) / (vmid - vbot);
 }
 
-// Helper function to calculate Rbot
+/**
+ * Calculates the bottom resistor value in a voltage divider
+ * 
+ * @param {number} vtop - Top voltage
+ * @param {number} vmid - Middle voltage (output)
+ * @param {number} vbot - Bottom voltage
+ * @param {number} rtop - Top resistor value (ohms)
+ * @returns {number} The required bottom resistor value (ohms)
+ */
 function calculateRbot(vtop, vmid, vbot, rtop) {
     // For a voltage divider, Vmid = Vbot + (Rbot/(Rtop+Rbot)) * (Vtop-Vbot)
     // Solve for Rbot: Rbot = Rtop * (Vmid-Vbot) / (Vtop-Vmid)
     return rtop * (vmid - vbot) / (vtop - vmid);
+}
+
+/**
+ * Calculates the top voltage in a resistor divider
+ * 
+ * @param {number} vmid - Middle voltage
+ * @param {number} vbot - Bottom voltage
+ * @param {number} rtop - Top resistor value (ohms)
+ * @param {number} rbot - Bottom resistor value (ohms)
+ * @returns {number} The required top voltage
+ */
+function calculateVtop(vmid, vbot, rtop, rbot) {
+    // For a voltage divider: Vmid = Vbot + (Rbot/(Rtop+Rbot)) * (Vtop-Vbot)
+    // Solving for Vtop: Vtop = Vbot + (Vmid-Vbot) * (Rtop+Rbot)/Rbot
+    return vbot + (vmid - vbot) * (rtop + rbot) / rbot;
+}
+
+/**
+ * Calculates the bottom voltage in a resistor divider
+ * 
+ * @param {number} vtop - Top voltage
+ * @param {number} vmid - Middle voltage
+ * @param {number} rtop - Top resistor value (ohms)
+ * @param {number} rbot - Bottom resistor value (ohms)
+ * @returns {number} The required bottom voltage
+ */
+function calculateVbot(vtop, vmid, rtop, rbot) {
+    // For a voltage divider: Vmid = Vbot + (Rbot/(Rtop+Rbot)) * (Vtop-Vbot)
+    // Solving for Vbot: Vbot = (Vmid*(Rtop+Rbot) - Vtop*Rbot) / Rtop
+    return (vmid * (rtop + rbot) - vtop * rbot) / rtop;
 }
 
 // Helper function to get numeric value from an input field
@@ -188,6 +247,19 @@ function calculateDivider(target) {
 
     try {
         switch (target) {
+            case 'vtop':
+                if (!utils.validateInputs(
+                    [vmid, vbot, rtop, rbot],
+                    ['Middle Voltage', 'Bottom Voltage', 'Top Resistor', 'Bottom Resistor']
+                )) {
+                    return;
+                }
+               
+                const vtopVal = calculateVtop(vmid, vbot, rtop, rbot);
+                if (vtopVal <= vmid) throw new Error('Invalid result: Top voltage must be greater than middle voltage');
+                utils.setValue('div-vtop', vtopVal, 3);
+                break;
+
             case 'rtop':
                 if (!utils.validateInputs(
                     [vtop, vmid, vbot, rbot],
@@ -228,6 +300,19 @@ function calculateDivider(target) {
                     utils.setValue('div-vmid', vmidVal, 3);
                 }
                 break;
+
+            case 'vbot':
+                if (!utils.validateInputs(
+                    [vtop, vmid, rtop, rbot],
+                    ['Top Voltage', 'Middle Voltage', 'Top Resistor', 'Bottom Resistor']
+                )) {
+                    return;
+                }
+               
+                const vbotVal = calculateVbot(vtop, vmid, rtop, rbot);
+                if (vbotVal >= vmid) throw new Error('Invalid result: Bottom voltage must be less than middle voltage');
+                utils.setValue('div-vbot', vbotVal, 3);
+                break;
         }
         updateCurrentAndPower();
         updateResistorRatio();
@@ -240,7 +325,13 @@ function calculateDivider(target) {
 let lastFoundPairs = [];
 let currentSortBy = 'ratio'; // Default sort
 
-// Get nearby standard values from target value
+/**
+ * Gets nearby standard resistor values around a target value
+ * 
+ * @param {Array<number>} standardValues - Array of standard resistor values
+ * @param {number} targetValue - Target resistor value to find neighbors for
+ * @returns {Array<number>} Array of nearby standard resistor values
+ */
 function getNearbyStandardValues(standardValues, targetValue) {
     // Get unique base values (between 1 and 10) from the standard values
     const baseValues = extractBaseValues(standardValues);
@@ -277,7 +368,13 @@ function getNearbyStandardValues(standardValues, targetValue) {
     return result;
 }
 
-// Helper function to extract unique base values from standard values
+/**
+ * Extract unique base values from standard resistor values
+ * Base values are between 1 and 10 and represent the significant digits
+ * 
+ * @param {Array<number>} standardValues - Array of standard resistor values
+ * @returns {Array<number>} Array of unique base values sorted in ascending order
+ */
 function extractBaseValues(standardValues) {
     const baseValues = [];
     const usedBaseValues = new Set();
@@ -297,17 +394,27 @@ function extractBaseValues(standardValues) {
     return baseValues.sort((a, b) => a - b);
 }
 
-// Helper function to find the index of the closest value in an array
+/**
+ * Find the index of the closest value in an array
+ * 
+ * @param {Array<number>} values - Array of values to search in
+ * @param {number} targetValue - Value to find closest match for
+ * @param {boolean} useLogarithmic - Whether to use logarithmic comparison (better for resistor values)
+ * @returns {number} Index of the closest value in the array
+ */
 function findClosestValueIndex(values, targetValue, useLogarithmic = false) {
     let closestIndex = 0;
     let closestError = Infinity;
    
     for (let i = 0; i < values.length; i++) {
-        // Calculate error - either direct or logarithmic comparison
-        const error = useLogarithmic
-            ? Math.abs(Math.log10(values[i]) - Math.log10(targetValue))
-            : Math.abs(values[i] - targetValue);
-           
+        let error;
+        if (useLogarithmic) {
+            // Logarithmic comparison is better for finding resistor values
+            error = Math.abs(Math.log10(values[i]) - Math.log10(targetValue));
+        } else {
+            error = Math.abs(values[i] - targetValue);
+        }
+       
         if (error < closestError) {
             closestError = error;
             closestIndex = i;
@@ -317,66 +424,85 @@ function findClosestValueIndex(values, targetValue, useLogarithmic = false) {
     return closestIndex;
 }
 
-// Helper function to build a sequence of all standard values across decades
+/**
+ * Build a sequential list of all standard values across multiple decades
+ * 
+ * @param {Array<number>} baseValues - Array of base values (1-10)
+ * @returns {Array<{value: number, baseValue: number, decade: number}>} Array of objects with value, baseValue and decade
+ */
 function buildSequentialValues(baseValues) {
-    const allSequentialValues = [];
-   
-    // Generate values for decades from 10^0 to 10^6
-    for (let exp = 0; exp <= 6; exp++) {
-        for (const base of baseValues) {
-            allSequentialValues.push({
-                value: base * Math.pow(10, exp),
-                baseValue: base,
-                exponent: exp
+    const allValues = [];
+    
+    // Use -3 to +5 decades to cover from milliohms to megaohms
+    for (let decade = -3; decade <= 5; decade++) {
+        for (const baseValue of baseValues) {
+            const value = baseValue * Math.pow(10, decade);
+            allValues.push({
+                value,
+                baseValue,
+                decade
             });
         }
     }
-   
-    // Sort all values
-    return allSequentialValues.sort((a, b) => a.value - b.value);
+    
+    // Sort by actual value
+    return allValues.sort((a, b) => a.value - b.value);
 }
 
-// Find optimal standard value resistor pairs
+/**
+ * Finds standard resistor pairs that match the desired voltage divider ratio
+ * 
+ * @param {string|number} tolerance - Resistor tolerance (0.1, 1, or 5 percent)
+ * @returns {Object} Object with pairs property containing array of matching resistor pairs
+ */
 function findStandardPairs(tolerance) {
-    // Get and validate input values
-    const values = getAndValidateInputValues();
-    if (!values) {
-        return { pairs: [] }; // Return object with empty pairs array
-    }
-   
-    const { vtop, vmid, vbot, rtop, rbot } = values;
-   
-    // Calculate target ratio and original values
-    const targetRatio = rtop / rbot;
-    const originalSum = rtop + rbot;
-    const originalCurrent = Math.abs((vtop - vbot) / originalSum);
-   
-    // Get standard values and error limit for the selected tolerance
-    const standardValues = getStandardValues(tolerance);
-    const errorLimit = getErrorLimit(tolerance);
-   
-    // Get candidate resistors around the originals
-    const topValues = getNearbyStandardValues(standardValues, rtop);
-    const bottomValues = getNearbyStandardValues(standardValues, rbot);
-   
-    // Find all valid pairs
-    const allPairs = findValidPairs(
-        topValues,
-        bottomValues,
-        { vtop, vmid, vbot, targetRatio, originalSum, originalCurrent },
-        errorLimit
-    );
-   
-    // If no acceptable pairs found, return empty result
-    if (allPairs.length === 0) {
+    try {
+        // Convert tolerance to number if it's a string
+        tolerance = parseFloat(tolerance);
+        
+        // Get and validate input values
+        const values = getAndValidateInputValues();
+        if (!values) {
+            return { pairs: [] }; // Return object with empty pairs array
+        }
+       
+        const { vtop, vmid, vbot, rtop, rbot } = values;
+       
+        // Calculate target ratio and original values
+        const targetRatio = rtop / rbot;
+        const originalSum = rtop + rbot;
+        const originalCurrent = Math.abs((vtop - vbot) / originalSum);
+       
+        // Get standard values and error limit for the selected tolerance
+        const standardValues = getStandardValues(tolerance);
+        const errorLimit = getErrorLimit(tolerance);
+       
+        // Get candidate resistors around the originals
+        const topValues = getNearbyStandardValues(standardValues, rtop);
+        const bottomValues = getNearbyStandardValues(standardValues, rbot);
+       
+        // Find all valid pairs
+        const allPairs = findValidPairs(
+            topValues,
+            bottomValues,
+            { vtop, vmid, vbot, targetRatio, originalSum, originalCurrent },
+            errorLimit
+        );
+       
+        // If no acceptable pairs found, return empty result
+        if (allPairs.length === 0) {
+            return { pairs: [] };
+        }
+       
+        // Create sorted list of best pairs
+        const bestPairs = createSortedLists(allPairs);
+        
+        // Return as object with pairs property
+        return { pairs: bestPairs };
+    } catch (error) {
+        handleError("Error finding standard pairs", error);
         return { pairs: [] };
     }
-   
-    // Create sorted list of best pairs
-    const bestPairs = createSortedLists(allPairs);
-    
-    // Return as object with pairs property
-    return { pairs: bestPairs };
 }
 
 // Helper function to get and validate all input values
@@ -395,26 +521,90 @@ function getAndValidateInputValues() {
     return { vtop, vmid, vbot, rtop, rbot };
 }
 
-// Find all valid resistor pairs
+/**
+ * Get the acceptable error limit based on tolerance
+ * 
+ * @param {number} tolerance - Resistor tolerance in percent (0.1, 1, or 5)
+ * @returns {number} Error limit as a percentage
+ */
+function getErrorLimit(tolerance) {
+    // Allow error based on tolerance
+    switch (parseFloat(tolerance)) {
+        case 0.1: return 2;    // Allow 2% error for 0.1% tolerance
+        case 1:   return 4;    // Allow 4% error for 1% tolerance
+        case 5:   return 7;    // Allow 7% error for 5% tolerance
+        default:  return 4;    // Default to 1% tolerance behavior
+    }
+}
+
+/**
+ * Validates that all required voltage and resistor inputs are valid
+ * 
+ * @param {number} vtop - Top voltage
+ * @param {number} vmid - Middle voltage
+ * @param {number} vbot - Bottom voltage
+ * @param {number} rtop - Top resistor value
+ * @param {number} rbot - Bottom resistor value
+ * @returns {boolean} True if all inputs are valid
+ */
+function validateInputs(vtop, vmid, vbot, rtop, rbot) {
+    // Check that all values are present and valid
+    if (isAnyValueInvalid([vtop, vmid, vbot, rtop, rbot])) {
+        alert('Please ensure all values are entered and valid');
+        return false;
+    }
+   
+    // Check resistor values
+    if (rtop <= 0 || rbot <= 0) {
+        alert('Resistances must be positive');
+        return false;
+    }
+   
+    // Check voltage relationships
+    if (!isValidVoltageRange(vtop, vmid, vbot)) {
+        alert('Voltage relationships must be: Vtop > Vmid > Vbot');
+        return false;
+    }
+   
+    return true;
+}
+
+/**
+ * Find all valid resistor pairs that meet the error criteria
+ * 
+ * @param {Array<number>} topValues - Candidate top resistor values
+ * @param {Array<number>} bottomValues - Candidate bottom resistor values
+ * @param {Object} originalValues - Original values to compare against
+ * @param {number} errorLimit - Maximum allowed error percentage
+ * @returns {Array<Object>} Array of valid resistor pairs with their metrics
+ */
 function findValidPairs(topValues, bottomValues, originalValues, errorLimit) {
     const { vtop, vmid, vbot, targetRatio, originalSum, originalCurrent } = originalValues;
     const allPairs = [];
    
     for (const tryRtop of topValues) {
         for (const tryRbot of bottomValues) {
+            // Skip invalid combinations
+            if (tryRtop <= 0 || tryRbot <= 0) continue;
+            
             // Calculate ratio and error
             const ratio = tryRtop / tryRbot;
             const ratioError = calculatePercentError(ratio, targetRatio);
-           
-            // Calculate metrics for all pairs
-            const pairData = calculatePairMetrics(
-                tryRtop, tryRbot, vtop, vbot, vmid,
-                ratio, ratioError, originalSum, originalCurrent
-            );
-            allPairs.push(pairData);
+            
+            // Filter pairs based on ratio error
+            if (Math.abs(ratioError) <= errorLimit) {
+                // Calculate metrics for this pair
+                const pairMetrics = calculatePairMetrics(
+                    tryRtop, tryRbot, vtop, vbot, vmid,
+                    ratio, ratioError, originalSum, originalCurrent
+                );
+                
+                // Add to results
+                allPairs.push(pairMetrics);
+            }
         }
     }
-   
+    
     return allPairs;
 }
 
@@ -440,43 +630,37 @@ function calculatePairMetrics(rtop, rbot, vtop, vbot, vmid, ratio, ratioError, o
     };
 }
 
-// Generic function to calculate percent error
+// Define error limits for different tolerance classes (for display purposes only)
+const ERROR_LIMITS = {
+    '0.1': { description: '0.1% (E192 series)', limit: 2 },
+    '1': { description: '1% (E96 series)', limit: 4 },
+    '5': { description: '5% (E24 series)', limit: 7 }
+};
+
+/**
+ * Calculate percentage error between actual and expected values
+ * 
+ * @param {number} actual - Actual measured value
+ * @param {number} expected - Expected or target value
+ * @returns {number} Percentage error (positive or negative)
+ */
 function calculatePercentError(actual, expected) {
+    // Avoid division by zero
+    if (expected === 0) return actual === 0 ? 0 : 100;
     return ((actual - expected) / expected) * 100;
 }
 
-// Create sorted lists of resistor pairs
+/**
+ * Create a sorted list of resistor pairs
+ * 
+ * @param {Array<Object>} allPairs - Array of all valid resistor pairs
+ * @returns {Array<Object>} Sorted list of pairs by ratio error (maximum 20 pairs)
+ */
 function createSortedLists(allPairs) {
-    // Sort by absolute ratio error and take top 20 pairs
-    const bestPairs = [...allPairs].sort((a, b) =>
-        Math.abs(a.ratioError) - Math.abs(b.ratioError)
-    ).slice(0, 20);
-   
-    // Return just these best pairs
-    return bestPairs;
-}
-
-// Helper functions for findStandardPairs
-function validateInputs(vtop, vmid, vbot, rtop, rbot) {
-    // Check that all values are present and valid
-    if (isAnyValueInvalid([vtop, vmid, vbot, rtop, rbot])) {
-        alert('Please ensure all values are entered and valid');
-        return false;
-    }
-   
-    // Check resistor values
-    if (rtop <= 0 || rbot <= 0) {
-        alert('Resistances must be positive');
-        return false;
-    }
-   
-    // Check voltage relationships
-    if (!isValidVoltageRange(vtop, vmid, vbot)) {
-        alert('Voltage relationships must be: Vtop > Vmid > Vbot');
-        return false;
-    }
-   
-    return true;
+    // Sort by ratio error (ascending) and take top 20 pairs
+    return allPairs
+        .sort((a, b) => Math.abs(a.ratioError) - Math.abs(b.ratioError))
+        .slice(0, 20); // Limit to top 20 pairs
 }
 
 // Check if any value is null, undefined, NaN, or empty
@@ -491,22 +675,6 @@ function isAnyValueInvalid(values) {
 // Check if voltages are in correct ascending order
 function isValidVoltageRange(vtop, vmid, vbot) {
     return vtop > vmid && vmid > vbot;
-}
-
-// Define error limits for different tolerance classes (for display purposes only)
-const ERROR_LIMITS = {
-    '0.1': { description: '0.1% (E192 series)', limit: 1.0 },
-    '1': { description: '1% (E96 series)', limit: 4.0 },
-    '5': { description: '5% (E24 series)', limit: 15.0 }
-};
-
-function getErrorLimit(tolerance) {
-    // Ensure tolerance is treated as a string for comparison
-    const tolStr = String(tolerance);
-   
-    // Get limit from defined constants, or use default
-    const errorConfig = ERROR_LIMITS[tolStr] || ERROR_LIMITS['5'];
-    return errorConfig.limit;
 }
 
 // Keep track of the current tolerance selection
@@ -628,7 +796,11 @@ function updateToleranceTitle(tolerance) {
     }
 }
 
-// Function to sort and display pairs
+/**
+ * Sort and display resistor pairs in the UI table
+ * 
+ * @param {Array<Object>} pairs - Array of resistor pairs to display
+ */
 function sortAndDisplayPairs(pairs) {
     if (!pairs || pairs.length === 0) {
         // Display a message if no pairs found
@@ -670,7 +842,12 @@ function sortAndDisplayPairs(pairs) {
     addPairsToTable(tbody, sortedPairs);
 }
 
-// Function to create a sort function based on sort criteria
+/**
+ * Creates a sort function based on the selected criteria
+ * 
+ * @param {string} sortBy - Sort criteria ('ratio', 'current', or 'topR')
+ * @returns {Function} A comparison function for sorting
+ */
 function createSortFunction(sortBy) {
     switch (sortBy) {
         case 'ratio':
@@ -684,7 +861,11 @@ function createSortFunction(sortBy) {
     }
 }
 
-// Toggle sort order for standard pairs
+/**
+ * Toggle sort order for standard pairs and update display
+ * 
+ * @param {string} sortBy - Sort criteria ('ratio', 'current', or 'topR')
+ */
 function sortPairs(sortBy) {
     if (!lastFoundPairs || lastFoundPairs.length === 0) {
         handleError("No valid pairs data provided to sortAndDisplayPairs");
@@ -712,12 +893,15 @@ function sortPairs(sortBy) {
     updateSortButtonStates(sortBy);
 }
 
-// Thresholds for different error classes
+/**
+ * Thresholds for different error classes (for visual indication)
+ * These values determine the color coding of errors in the UI
+ */
 const ERROR_THRESHOLDS = {
     // Thresholds for ratio error (excellent, good, acceptable)
-    ratio: [0.05, 0.2, 0.5],
+    ratio: [0.5, 1.0, 3.0],
     // Thresholds for current error (excellent, good, acceptable)
-    current: [1.0, 5.0, 10.0]
+    current: [1.0, 3.0, 5.0]
 };
 
 /**
@@ -840,16 +1024,16 @@ function updateActiveSortButton(sortType, activeButton, ...inactiveButtons) {
 }
 
 /**
- * Format a resistor value with the appropriate unit prefix (Ω, kΩ, MΩ)
- *
- * @param {number} value - The resistor value in ohms
- * @returns {string} Formatted resistor value with appropriate unit
+ * Format a resistor value with appropriate units (Ω, kΩ, MΩ)
+ * 
+ * @param {number} value - Resistor value in ohms
+ * @returns {string} Formatted resistor value with units
  */
 function formatResistorValue(value) {
-    if (value >= 1000000) {
-        return (value / 1000000).toFixed(2) + ' MΩ';
-    } else if (value >= 1000) {
-        return (value / 1000).toFixed(2) + ' kΩ';
+    if (value >= 1e6) {
+        return (value / 1e6).toFixed(2) + ' MΩ';
+    } else if (value >= 1e3) {
+        return (value / 1e3).toFixed(2) + ' kΩ';
     } else {
         return value.toFixed(2) + ' Ω';
     }
@@ -931,20 +1115,47 @@ window.findStandardPairs = findStandardPairs;
 window.updateCurrentAndPower = updateCurrentAndPower;
 window.updateResistorRatio = updateResistorRatio;
 
-// Production-appropriate error handling
+/**
+ * Production-appropriate error handling function
+ * Only logs errors in development environments
+ * 
+ * @param {string} message - Error message
+ * @param {Error} error - Original error object (optional)
+ */
 function handleError(message, error = null) {
     // Only log to console in development environments
-    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+    if (window.location.hostname === 'localhost' || 
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname === '') {
         if (error) {
             console.error(message, error);
         } else {
             console.error(message);
         }
     }
+    
     // For production, we could send errors to a monitoring service here
+    // Add analytics or error reporting in production
+    if (window.errorReporter && typeof window.errorReporter.reportError === 'function') {
+        try {
+            window.errorReporter.reportError({
+                source: 'divider-calculator',
+                message,
+                details: error ? error.toString() : null,
+                stack: error?.stack
+            });
+        } catch (e) {
+            // Don't let error reporting failures crash the app
+        }
+    }
 }
 
-// Add pairs to table
+/**
+ * Add resistor pairs to the table
+ * 
+ * @param {HTMLElement} tbody - Table body element to add rows to
+ * @param {Array<Object>} pairs - Array of resistor pairs to add
+ */
 function addPairsToTable(tbody, pairs) {
     if (pairs.length === 0) {
         showNoResultsMessage(tbody, getSelectedTolerance());
