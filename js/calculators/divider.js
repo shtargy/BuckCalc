@@ -518,10 +518,10 @@ let currentTolerance = '5'; // Default to 5%
  * @param {string} tolerance - The tolerance value ('0.1', '1', or '5')
  */
 function showStandardPairs(tolerance) {
-    // Save the current tolerance selection
-    currentTolerance = tolerance;
-    
     try {
+        // Save the current tolerance selection
+        currentTolerance = tolerance;
+        
         // Set default values if needed
         setDefaultValuesIfNeeded();
         
@@ -529,37 +529,53 @@ function showStandardPairs(tolerance) {
         updateCurrentAndPower();
         updateResistorRatio();
         
-        // Get required DOM elements
-        const elements = getRequiredDOMElements();
-        if (!elements) return;
+        // Get required DOM elements - use the correct IDs from HTML
+        const container = document.getElementById('standard-values-container');
+        if (!container) {
+            handleError("Container element not found!");
+            return;
+        }
         
-        const { container, table, tbody } = elements;
+        const table = document.getElementById('standard-values-table');
+        if (!table) {
+            handleError("Table element not found!");
+            return;
+        }
+        
+        const tbody = table.querySelector('tbody');
+        if (!tbody) {
+            handleError("Table body element not found!");
+            return;
+        }
         
         // Get input values and validate
         const values = getAndValidateInputValues();
         if (!values) return;
         
-        // Find standard resistor pairs
-        const standardPairsResult = findStandardPairs(
-            values.vtop, values.vmid, values.vbot,
-            values.rtop, values.rbot,
-            tolerance
-        );
+        // Find standard resistor pairs - pass only tolerance
+        const result = findStandardPairs(tolerance);
         
         // Check if we have any valid pairs
-        if (!standardPairsResult || standardPairsResult.pairs.length === 0) {
+        if (!result || !result.pairs || result.pairs.length === 0) {
             showNoResultsMessage(tbody, tolerance);
             updateToleranceTitle(tolerance);
             return;
         }
         
         // Store the pairs for sorting later
-        lastFoundPairs = standardPairsResult.pairs;
+        lastFoundPairs = result.pairs;
         
         // Sort by the last used sorting criteria
         sortAndDisplayPairs(lastFoundPairs);
         
-        updateToleranceTitle(tolerance);
+        // Update title to show current tolerance
+        const title = document.getElementById('standard-values-title');
+        if (title) {
+            title.textContent = `Standard ${tolerance}% Resistor Pairs:`;
+        }
+        
+        // Show the container
+        container.style.display = 'block';
         
         // Set up sort button handlers
         setupSortButtons();
@@ -583,21 +599,18 @@ function getRequiredDOMElements() {
     const container = document.getElementById('standard-values-container');
     if (!container) {
         handleError("Container element not found!");
-        alert("Error: Could not find the table container element");
         return null;
     }
 
     const table = document.getElementById('standard-values-table');
     if (!table) {
         handleError("Table element not found!");
-        alert("Error: Could not find the table element");
         return null;
     }
    
     const tbody = table.querySelector('tbody');
     if (!tbody) {
         handleError("Table body element not found!");
-        alert("Error: Could not find the table body element");
         return null;
     }
    
@@ -609,14 +622,17 @@ function showNoResultsMessage(tbody, tolerance) {
 }
 
 function updateToleranceTitle(tolerance) {
-    document.getElementById('standard-values-title').textContent = `Standard ${tolerance}% Resistor Pairs:`;
+    const title = document.getElementById('standard-values-title');
+    if (title) {
+        title.textContent = `Standard ${tolerance}% Resistor Pairs:`;
+    }
 }
 
 // Function to sort and display pairs
 function sortAndDisplayPairs(pairs) {
     if (!pairs || pairs.length === 0) {
         // Display a message if no pairs found
-        const container = document.getElementById('div-pairs-container');
+        const container = document.getElementById('standard-values-container');
         if (container) {
             container.innerHTML = '<p class="no-pairs-message">No matching resistor pairs found. Try adjusting tolerance or voltage values.</p>';
         } else {
@@ -629,7 +645,7 @@ function sortAndDisplayPairs(pairs) {
     const sortedPairs = [...pairs].sort(createSortFunction(currentSortBy));
     
     // Get the table element
-    const table = document.getElementById('div-pairs-table');
+    const table = document.getElementById('standard-values-table');
     if (!table) {
         handleError("Table element not found!");
         return;
@@ -645,7 +661,7 @@ function sortAndDisplayPairs(pairs) {
     tbody.innerHTML = '';
     
     // Show container
-    const container = document.getElementById('div-pairs-container');
+    const container = document.getElementById('standard-values-container');
     if (container) {
         container.style.display = 'block';
     }
@@ -679,7 +695,7 @@ function sortPairs(sortBy) {
     currentSortBy = sortBy;
     
     // Get table body
-    const tbody = document.getElementById('div-pairs-table').querySelector('tbody');
+    const tbody = document.getElementById('standard-values-table').querySelector('tbody');
     if (!tbody) {
         handleError("Table body element not found");
         return;
