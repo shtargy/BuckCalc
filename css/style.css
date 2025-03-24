@@ -290,4 +290,34 @@ body {
 .power-info, .current-info, .ratio-info {
     color: #0056b3;
     margin-left: 10px;
+}
+
+/* Calculator section styles */
+.calculator-section {
+    margin-bottom: 25px;
+}
+
+/* Add divider for sections */
+.calculator-section + .calculator-section {
+    border-top: none;
+    padding-top: 20px;
+    margin-top: 20px;
+    position: relative;
+}
+
+.calculator-section + .calculator-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 570px; /* Width that extends just past the Calculate button */
+    height: 1px;
+    background-color: #ddd;
+}
+
+.calculator-section h3 {
+    margin-top: 0;
+    color: #333;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
 } 

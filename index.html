@@ -15,11 +15,17 @@
                 <li class="calculator-item" data-calculator="buck" onclick="selectCalculator('buck')">
                     Buck Converter
                 </li>
+                <li class="calculator-item" data-calculator="boost" onclick="selectCalculator('boost')">
+                    Boost Converter
+                </li>
                 <li class="calculator-item" data-calculator="buck-boost" onclick="selectCalculator('buck-boost')">
                     Inverting Buck-Boost
                 </li>
                 <li class="calculator-item" data-calculator="divider" onclick="selectCalculator('divider')">
                     Resistor Divider
+                </li>
+                <li class="calculator-item" data-calculator="pcb" onclick="selectCalculator('pcb')">
+                    PCB
                 </li>
             </ul>
         </div>
@@ -76,7 +82,101 @@
             <span class="unit">A</span>
             <button class="calc-button" onclick="window.calculateIlpp()">Calculate</button>
         </div>
+
+        <div class="input-group">
+                    <label for="buck-duty">Duty Cycle:</label>
+                    <input type="number" id="buck-duty" step="0.001" readonly>
+            <span class="unit">%</span>
+            <button class="calc-button" onclick="window.calculateDutyCycle()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="buck-ton">Ton:</label>
+                    <input type="number" id="buck-ton" step="0.001" readonly>
+            <span class="unit">µs</span>
+            <button class="calc-button" onclick="window.calculateTon()">Calculate</button>
+        </div>
     </div>
+
+            <!-- Boost Converter Calculator -->
+            <div id="boost-calculator" class="calculator">
+        <h2>Boost Converter Calculator</h2>
+        
+        <div class="input-group">
+                    <label for="boost-vin">Input Voltage:</label>
+                    <input type="number" id="boost-vin" step="0.1">
+            <span class="unit">V</span>
+            <button class="calc-button" onclick="window.calculateBoostVin()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-vout">Output Voltage:</label>
+                    <input type="number" id="boost-vout" step="0.1">
+            <span class="unit">V</span>
+            <button class="calc-button" onclick="window.calculateBoostVout()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-inductance">Inductance:</label>
+                    <input type="number" id="boost-inductance" step="0.1">
+            <span class="unit">µH</span>
+            <button class="calc-button" onclick="window.calculateBoostL()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-fsw">Switching Freq:</label>
+                    <input type="number" id="boost-fsw" step="0.001">
+            <span class="unit">MHz</span>
+            <button class="calc-button" onclick="window.calculateBoostFsw()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-vdsh">Vds(hi):</label>
+                    <input type="number" id="boost-vdsh" step="0.001">
+            <span class="unit">V</span>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-vdsl">Vds(lo):</label>
+                    <input type="number" id="boost-vdsl" step="0.001">
+            <span class="unit">V</span>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-ilpp">iL(p-p):</label>
+                    <input type="number" id="boost-ilpp" step="0.1">
+            <span class="unit">A</span>
+            <button class="calc-button" onclick="window.calculateBoostIlpp()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-iout">Load Current:</label>
+                    <input type="number" id="boost-iout" step="0.1">
+            <span class="unit">A</span>
+            <button class="calc-button" onclick="window.calculateBoostIout()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-ilavg">IL(avg):</label>
+                    <input type="number" id="boost-ilavg" step="0.1">
+            <span class="unit">A</span>
+            <button class="calc-button" onclick="window.calculateBoostILavg()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-duty">Duty Cycle:</label>
+                    <input type="number" id="boost-duty" step="0.001" readonly>
+            <span class="unit">%</span>
+            <button class="calc-button" onclick="window.calculateBoostDutyCycle()">Calculate</button>
+        </div>
+
+        <div class="input-group">
+                    <label for="boost-ton">Ton:</label>
+                    <input type="number" id="boost-ton" step="0.001" readonly>
+            <span class="unit">µs</span>
+            <button class="calc-button" onclick="window.calculateBoostTon()">Calculate</button>
+        </div>
+            </div>
 
             <!-- Inverting Buck-Boost Calculator -->
             <div id="buck-boost-calculator" class="calculator">
@@ -227,6 +327,91 @@
                     </div>
                 </div>
             </div>
+
+            <!-- PCB Calculator -->
+            <div id="pcb-calculator" class="calculator">
+                <h2>PCB Calculator</h2>
+                
+                <!-- Trace Resistance Section -->
+                <div class="calculator-section">
+                    <h3>Copper Trace Resistance</h3>
+                    
+                    <div class="input-group">
+                        <label for="pcb-trace-temperature">Temperature:</label>
+                        <input type="number" id="pcb-trace-temperature" step="1" value="20">
+                        <span class="unit">°C</span>
+                        <span></span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pcb-trace-length">Trace Length:</label>
+                        <input type="number" id="pcb-trace-length" step="0.1">
+                        <span class="unit">mm</span>
+                        <button class="calc-button" onclick="window.calculateTraceLength()">Calculate</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pcb-trace-width">Trace Width:</label>
+                        <input type="number" id="pcb-trace-width" step="0.01">
+                        <span class="unit">mm</span>
+                        <button class="calc-button" onclick="window.calculateTraceWidth()">Calculate</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pcb-trace-thickness">Copper Thickness:</label>
+                        <input type="number" id="pcb-trace-thickness" step="0.1">
+                        <span class="unit">µm</span>
+                        <button class="calc-button" onclick="window.calculateTraceThickness()">Calculate</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pcb-trace-resistance">Resistance:</label>
+                        <input type="number" id="pcb-trace-resistance" step="0.001">
+                        <span class="unit">mΩ</span>
+                        <button class="calc-button" onclick="window.calculateTraceResistance()">Calculate</button>
+                    </div>
+                </div>
+                
+                <!-- Via Resistance Section -->
+                <div class="calculator-section">
+                    <h3>Via Resistance</h3>
+                    
+                    <div class="input-group">
+                        <label for="pcb-via-temperature">Temperature:</label>
+                        <input type="number" id="pcb-via-temperature" step="1" value="20">
+                        <span class="unit">°C</span>
+                        <span></span>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pcb-via-diameter">Outer Diameter:</label>
+                        <input type="number" id="pcb-via-diameter" step="0.01">
+                        <span class="unit">mm</span>
+                        <button class="calc-button" onclick="window.calculateViaOuterDiameter()">Calculate</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pcb-via-wall">Wall Thickness:</label>
+                        <input type="number" id="pcb-via-wall" step="0.01">
+                        <span class="unit">mm</span>
+                        <button class="calc-button" onclick="window.calculateViaWallThickness()">Calculate</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pcb-via-height">Via Height:</label>
+                        <input type="number" id="pcb-via-height" step="0.01">
+                        <span class="unit">mm</span>
+                        <button class="calc-button" onclick="window.calculateViaHeight()">Calculate</button>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="pcb-via-resistance">Resistance:</label>
+                        <input type="number" id="pcb-via-resistance" step="0.001">
+                        <span class="unit">mΩ</span>
+                        <button class="calc-button" onclick="window.calculateViaResistance()">Calculate</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -235,6 +420,8 @@
     <script src="js/main.js"></script>
     <script src="js/calculators/divider.js"></script>
     <script src="js/calculators/buck.js"></script>
+    <script src="js/calculators/boost.js"></script>
     <script src="js/calculators/buck-boost.js"></script>
+    <script src="js/calculators/pcb.js"></script>
 </body>
 </html> 

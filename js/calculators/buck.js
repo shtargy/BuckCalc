@@ -8,6 +8,7 @@
  * - Switching frequency
  * - Inductor current ripple
  * - Duty cycle
+ * - On time (Ton)
  * 
  * This module handles all the mathematical calculations for buck converters,
  * allowing users to solve for any parameter by providing the others.
@@ -41,10 +42,38 @@ function calculateDutyCycle() {
     const vdsh = utils.getValue('buck-vdsh') || 0;
     const vdsl = utils.getValue('buck-vdsl') || 0;
     
-    if (vin && vout) {
-        return (vout + vdsl) / (vin - vdsh);
+    // Validate inputs
+    if (!utils.validateInputs(
+        [vin, vout], 
+        ['Input Voltage', 'Output Voltage']
+    )) {
+        return;
     }
-    return null;
+    
+    const dutyCycle = (vout + vdsl) / (vin - vdsh);
+    utils.setValue('buck-duty', dutyCycle * 100); // Convert to percentage
+    return dutyCycle; // Still return the decimal value for internal calculations
+}
+
+// Calculate on-time (Ton)
+function calculateTon() {
+    const fsw = utils.getValue('buck-fsw');
+    const duty = calculateDutyCycle();
+    
+    // Validate inputs
+    if (!utils.validateInputs(
+        [fsw, duty], 
+        ['Switching Frequency', 'Duty Cycle']
+    )) {
+        return;
+    }
+    
+    const fswHz = utils.mhzToHz(fsw);
+    // Calculate Ton in seconds then convert to microseconds
+    const tonSeconds = duty / fswHz;
+    const tonMicroseconds = tonSeconds * 1000000;
+    
+    utils.setValue('buck-ton', tonMicroseconds);
 }
 
 // Calculate Vin
@@ -72,6 +101,10 @@ function calculateVin() {
     // Using duty cycle equation to find Vin
     const vin = (vout + vdsl) / d + vdsh;
     utils.setValue('buck-vin', vin);
+    
+    // Update dependent values
+    calculateDutyCycle();
+    calculateTon();
 }
 
 // Calculate Vout
@@ -101,11 +134,18 @@ function calculateVout() {
         const vout_new = (ilpp * fswHz * lH) / (1 - d);
         if (Math.abs(vout - vout_new) < 0.001) {
             utils.setValue('buck-vout', vout_new);
+            // Update dependent values
+            calculateDutyCycle();
+            calculateTon();
             return;
         }
         vout = vout_new;
     }
     utils.setValue('buck-vout', vout);
+    
+    // Update dependent values
+    calculateDutyCycle();
+    calculateTon();
 }
 
 // Calculate inductance
@@ -132,6 +172,10 @@ function calculateL() {
     const lH = (vout * (1 - d)) / (fswHz * ilpp);
     const luH = lH * 1000000;  // Convert H to µH
     utils.setValue('buck-inductance', luH);
+    
+    // Update dependent values
+    calculateDutyCycle();
+    calculateTon();
 }
 
 // Calculate switching frequency
@@ -158,6 +202,10 @@ function calculateFsw() {
     const fswHz = (vout * (1 - d)) / (lH * ilpp);
     const fswMHz = utils.hzToMhz(fswHz);
     utils.setValue('buck-fsw', fswMHz);
+    
+    // Update dependent values
+    calculateDutyCycle();
+    calculateTon();
 }
 
 // Calculate inductor current ripple
@@ -183,6 +231,10 @@ function calculateIlpp() {
     
     const ilpp = (vout * (1 - d)) / (fswHz * lH);
     utils.setValue('buck-ilpp', ilpp);
+    
+    // Update dependent values
+    calculateDutyCycle();
+    calculateTon();
 }
 
 // Register calculator with registry
@@ -197,7 +249,8 @@ if (window.calculatorRegistry) {
             calculateL: calculateL,
             calculateFsw: calculateFsw,
             calculateIlpp: calculateIlpp,
-            calculateDutyCycle: calculateDutyCycle
+            calculateDutyCycle: calculateDutyCycle,
+            calculateTon: calculateTon
         }
     );
 }
@@ -209,3 +262,4 @@ window.calculateL = calculateL;
 window.calculateFsw = calculateFsw;
 window.calculateIlpp = calculateIlpp;
 window.calculateDutyCycle = calculateDutyCycle; 
+window.calculateTon = calculateTon; 
