@@ -294,11 +294,9 @@ function calculateDivider(target) {
                     return;
                 }
                
-                // Only recalculate Vmid if it wasn't our target value
-                if (lastCalculated !== 'rtop' && lastCalculated !== 'rbot') {
-                    const vmidVal = calculateVmid(vtop, vbot, rtop, rbot);
-                    utils.setValue('div-vmid', vmidVal, 3);
-                }
+                // Always recalculate Vmid when Calculate is clicked
+                const vmidVal = calculateVmid(vtop, vbot, rtop, rbot);
+                utils.setValue('div-vmid', vmidVal, 3);
                 break;
 
             case 'vbot':
