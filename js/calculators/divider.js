@@ -200,10 +200,10 @@ function setValue(id, value) {
 
 // Calculate current and power
 function updateCurrentAndPower() {
-    const vtop = utils.getValue('div-vtop');
-    const vbot = utils.getValue('div-vbot');
-    const rtop = utils.getValue('div-rtop');
-    const rbot = utils.getValue('div-rbot');
+    const vtop = getValue('div-vtop');
+    const vbot = getValue('div-vbot');
+    const rtop = getValue('div-rtop');
+    const rbot = getValue('div-rbot');
    
     if (vtop !== null && vbot !== null && rtop !== null && rbot !== null &&
         !isNaN(vtop) && !isNaN(vbot) && !isNaN(rtop) && !isNaN(rbot) &&
@@ -221,8 +221,8 @@ function updateCurrentAndPower() {
 
 // Calculate and update resistor ratio
 function updateResistorRatio() {
-    const rtop = utils.getValue('div-rtop');
-    const rbot = utils.getValue('div-rbot');
+    const rtop = getValue('div-rtop');
+    const rbot = getValue('div-rbot');
    
     if (rtop !== null && rbot !== null && rbot !== 0) {
         const ratio = rtop / rbot;
@@ -236,11 +236,11 @@ function updateResistorRatio() {
 let lastCalculated = null;
 
 function calculateDivider(target) {
-    const vtop = utils.getValue('div-vtop');
-    const vmid = utils.getValue('div-vmid');
-    const vbot = utils.getValue('div-vbot');
-    const rtop = utils.getValue('div-rtop');
-    const rbot = utils.getValue('div-rbot');
+    const vtop = getValue('div-vtop');
+    const vmid = getValue('div-vmid');
+    const vbot = getValue('div-vbot');
+    const rtop = getValue('div-rtop');
+    const rbot = getValue('div-rbot');
 
     // Store which value we're calculating
     lastCalculated = target;
@@ -257,7 +257,7 @@ function calculateDivider(target) {
                
                 const vtopVal = calculateVtop(vmid, vbot, rtop, rbot);
                 if (vtopVal <= vmid) throw new Error('Invalid result: Top voltage must be greater than middle voltage');
-                utils.setValue('div-vtop', vtopVal, 3);
+                setValue('div-vtop', vtopVal);
                 break;
 
             case 'rtop':
@@ -270,7 +270,7 @@ function calculateDivider(target) {
                
                 const rtopVal = calculateRtop(vtop, vmid, vbot, rbot);
                 if (rtopVal <= 0) throw new Error('Invalid result: Top resistor must be positive');
-                utils.setValue('div-rtop', rtopVal, 2);
+                setValue('div-rtop', rtopVal);
                 break;
 
             case 'rbot':
@@ -283,7 +283,7 @@ function calculateDivider(target) {
                
                 const rbotVal = calculateRbot(vtop, vmid, vbot, rtop);
                 if (rbotVal <= 0) throw new Error('Invalid result: Bottom resistor must be positive');
-                utils.setValue('div-rbot', rbotVal, 2);
+                setValue('div-rbot', rbotVal);
                 break;
 
             case 'vmid':
@@ -296,7 +296,7 @@ function calculateDivider(target) {
                
                 // Always recalculate Vmid when Calculate is clicked
                 const vmidVal = calculateVmid(vtop, vbot, rtop, rbot);
-                utils.setValue('div-vmid', vmidVal, 3);
+                setValue('div-vmid', vmidVal);
                 break;
 
             case 'vbot':
@@ -309,7 +309,7 @@ function calculateDivider(target) {
                
                 const vbotVal = calculateVbot(vtop, vmid, rtop, rbot);
                 if (vbotVal >= vmid) throw new Error('Invalid result: Bottom voltage must be less than middle voltage');
-                utils.setValue('div-vbot', vbotVal, 3);
+                setValue('div-vbot', vbotVal);
                 break;
         }
         updateCurrentAndPower();
@@ -505,18 +505,35 @@ function findStandardPairs(tolerance) {
 
 // Helper function to get and validate all input values
 function getAndValidateInputValues() {
-    const vtop = utils.getValue('div-vtop');
-    const vmid = utils.getValue('div-vmid');
-    const vbot = utils.getValue('div-vbot');
-    const rtop = utils.getValue('div-rtop');
-    const rbot = utils.getValue('div-rbot');
-   
+    const vtop = getValue('div-vtop');
+    const vmid = getValue('div-vmid');
+    const vbot = getValue('div-vbot');
+    const rtop = getValue('div-rtop');
+    const rbot = getValue('div-rbot');
+    
     // Validate values
-    if (!validateInputs(vtop, vmid, vbot, rtop, rbot)) {
+    if (isAnyValueInvalid([vtop, vmid, vbot, rtop, rbot])) {
         return null;
     }
-   
-    return { vtop, vmid, vbot, rtop, rbot };
+    
+    // Check voltage relationships
+    if (!isValidVoltageRange(vtop, vmid, vbot)) {
+        alert('Voltage must be in the correct order: Vtop > Vmid > Vbot');
+        return null;
+    }
+    
+    // Check resistor values
+    if (rtop <= 0 || rbot <= 0) {
+        alert('Resistor values must be positive');
+        return null;
+    }
+    
+    // Calculate target ratio
+    const targetRatio = rtop / rbot;
+    const originalSum = rtop + rbot;
+    const originalCurrent = Math.abs((vtop - vbot) / originalSum);
+    
+    return { vtop, vmid, vbot, rtop, rbot, targetRatio, originalSum, originalCurrent };
 }
 
 /**
@@ -751,14 +768,14 @@ function showStandardPairs(tolerance) {
     }
 }
 
-// Helper functions for showing standard pairs
+// Helper function to set default values if needed
 function setDefaultValuesIfNeeded() {
     // Force any blank inputs to valid defaults before calculations
-    if (utils.getValue('div-vtop') === null) utils.setValue('div-vtop', "5", 3);
-    if (utils.getValue('div-vmid') === null) utils.setValue('div-vmid', "2.5", 3);
-    if (utils.getValue('div-vbot') === null) utils.setValue('div-vbot', "0", 3);
-    if (utils.getValue('div-rtop') === null) utils.setValue('div-rtop', "10000", 2);
-    if (utils.getValue('div-rbot') === null) utils.setValue('div-rbot', "10000", 2);
+    if (getValue('div-vtop') === null) setValue('div-vtop', 5);
+    if (getValue('div-vmid') === null) setValue('div-vmid', 2.5);
+    if (getValue('div-vbot') === null) setValue('div-vbot', 0);
+    if (getValue('div-rtop') === null) setValue('div-rtop', 10000);
+    if (getValue('div-rbot') === null) setValue('div-rbot', 10000);
 }
 
 function getRequiredDOMElements() {
