@@ -461,10 +461,25 @@ function calculateWaferSize() {
     // Use the numerical solver to calculate wafer size
     const waferSize = solveForWaferSize(grossDies, edgeKeepout, dieX, dieY, sawStreet);
     
-    // Display with appropriate precision
-    utils.setValue('wafer-size', waferSize.toFixed(1));
+    // Select the closest standard wafer size from the dropdown
+    const waferSizeSelect = document.getElementById('wafer-size');
+    if (waferSizeSelect) {
+        // Find the closest standard wafer size
+        const standardSizes = Array.from(waferSizeSelect.options).map(opt => parseFloat(opt.value));
+        const closestSize = standardSizes.reduce((prev, curr) => 
+            Math.abs(curr - waferSize) < Math.abs(prev - waferSize) ? curr : prev
+        );
+        
+        // Set the dropdown to the closest standard size
+        waferSizeSelect.value = closestSize.toString();
+        
+        // Show a message if the calculated size is significantly different
+        if (Math.abs(waferSize - closestSize) > 10) {
+            alert(`Calculated wafer size was ${waferSize.toFixed(1)}mm, but rounded to standard size ${closestSize}mm`);
+        }
+    }
     
-    // Update gross dies calculation to verify
+    // Update gross dies calculation with the selected standard size
     calculateGrossDies();
 }
 
@@ -769,6 +784,52 @@ if (window.calculatorRegistry) {
         }
     );
 }
+
+// Initialize default values when the DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default value for edge keepout
+    const edgeKeepoutInput = document.getElementById('wafer-edge-keepout');
+    if (edgeKeepoutInput) {
+        edgeKeepoutInput.value = edgeKeepoutInput.value || '3';
+    }
+    
+    // Add event listener to wafer size dropdown to recalculate when changed
+    const waferSizeSelect = document.getElementById('wafer-size');
+    if (waferSizeSelect) {
+        waferSizeSelect.addEventListener('change', function() {
+            // Recalculate gross dies when wafer size changes
+            if (document.getElementById('wafer-die-x').value && 
+                document.getElementById('wafer-die-y').value && 
+                document.getElementById('wafer-saw-street').value &&
+                document.getElementById('wafer-edge-keepout').value) {
+                calculateGrossDies();
+            }
+        });
+    }
+    
+    // Initialize calculations with the default wafer size
+    setTimeout(function() {
+        // Make sure all default values are ready before calculating
+        if (waferSizeSelect && waferSizeSelect.value) {
+            // Trigger some initial calculations if other fields have values
+            if (document.getElementById('wafer-die-x').value && 
+                document.getElementById('wafer-die-y').value && 
+                document.getElementById('wafer-saw-street').value) {
+                calculateGrossDies();
+            }
+        }
+    }, 500); // Short delay to ensure the DOM is fully processed
+});
+
+// Override getValue specifically for wafer-size to handle the dropdown
+const originalGetValue = utils.getValue;
+utils.getValue = function(id) {
+    if (id === 'wafer-size') {
+        const waferSizeSelect = document.getElementById('wafer-size');
+        return waferSizeSelect ? parseFloat(waferSizeSelect.value) : null;
+    }
+    return originalGetValue.call(utils, id);
+};
 
 // Make functions globally accessible
 window.calculateDieX = calculateDieX;

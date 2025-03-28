@@ -263,3 +263,9 @@ window.calculateFsw = calculateFsw;
 window.calculateIlpp = calculateIlpp;
 window.calculateDutyCycle = calculateDutyCycle; 
 window.calculateTon = calculateTon; 
+
+// Edge keepout input
+const edgeKeepoutInput = document.getElementById('buck-edge-keepout');
+if (edgeKeepoutInput) {
+    edgeKeepoutInput.value = edgeKeepoutInput.value || '3';
+} 
