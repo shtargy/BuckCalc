@@ -5,6 +5,18 @@
  * All new calculators should use these utilities for consistency and maintainability.
  */
 
+// --- Constants ---
+
+// Conversion Factors
+const MICRO_CONVERSION_FACTOR = 1000000; // For µH, µs, etc.
+const MILLI_CONVERSION_FACTOR = 1000;    // For mΩ, mA, etc.
+
+// Common Solver Parameters (if applicable)
+const ITERATION_LIMIT = 10;          // Default max iterations for solvers
+const CONVERGENCE_THRESHOLD = 0.001; // Default tolerance for solvers
+
+// --- Functions ---
+
 /**
  * Gets a numeric value from an input field with full precision
  * 
@@ -19,11 +31,7 @@ function getValue(id) {
     const element = document.getElementById(id);
     if (!element) return null;
     
-    // If we have a stored precise value, use that
-    if (element.dataset.preciseValue !== undefined) {
-        return parseFloat(element.dataset.preciseValue);
-    }
-    // Otherwise fall back to the input value
+    // Always read the current visible value from the input field
     const value = element.value;
     return value === '' ? null : parseFloat(value);
 }

@@ -20,6 +20,45 @@
  * - All functions use common utilities from utils.js for consistency
  */
 
+// Helper function to manage calculation flow
+function calculateAndUpdate(inputIds, outputId, calculationFn, dependentFns = [calculateDutyCycle, calculateTon]) {
+    // Fetch required input values
+    const inputValues = inputIds.map(id => utils.getValue(id));
+    
+    // Fetch potentially needed diode/switch voltages
+    const vdsh = utils.getValue('buck-vdsh') || 0;
+    const vdsl = utils.getValue('buck-vdsl') || 0;
+
+    // Crude way to get potential names for validation messages
+    const inputNames = inputIds.map(id => id.replace('buck-', '').toUpperCase());
+
+    // Validate core inputs
+    if (!utils.validateInputs(inputValues, inputNames)) {
+        return null; // Indicate validation failure
+    }
+
+    // Execute the specific calculation logic, passing necessary values
+    const result = calculationFn(...inputValues, vdsh, vdsl);
+
+    // Check if calculation was successful and returned a value
+    if (result !== null && result !== undefined && !isNaN(result)) {
+        utils.setValue(outputId, result);
+
+        // Update dependent fields if calculation succeeded
+        dependentFns.forEach(fn => {
+            // Ensure dependent functions exist before calling
+            if (typeof fn === 'function') {
+                fn();
+            } else {
+                console.error('Dependent function is not valid:', fn);
+            }
+        });
+
+        return result; // Return the calculated value
+    }
+    return null; // Indicate calculation failure or no result
+}
+
 // Buck Converter Calculator Functions
 
 // Helper function to get numeric value from an input field
@@ -71,40 +110,28 @@ function calculateTon() {
     const fswHz = utils.mhzToHz(fsw);
     // Calculate Ton in seconds then convert to microseconds
     const tonSeconds = duty / fswHz;
-    const tonMicroseconds = tonSeconds * 1000000;
+    const tonMicroseconds = tonSeconds * MICRO_CONVERSION_FACTOR;
     
     utils.setValue('buck-ton', tonMicroseconds);
 }
 
 // Calculate Vin
 function calculateVin() {
-    const vout = utils.getValue('buck-vout');
-    const vdsh = utils.getValue('buck-vdsh') || 0;
-    const vdsl = utils.getValue('buck-vdsl') || 0;
-    const ilpp = utils.getValue('buck-ilpp');
-    const l = utils.getValue('buck-inductance');
-    const fsw = utils.getValue('buck-fsw');
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vout, ilpp, l, fsw], 
-        ['Output Voltage', 'Current Ripple', 'Inductance', 'Switching Frequency']
-    )) {
-        return;
-    }
-    
-    // Using inductor ripple equation
-    const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
-    const d = 1 - ((ilpp * fswHz * lH) / vout);
-    
-    // Using duty cycle equation to find Vin
-    const vin = (vout + vdsl) / d + vdsh;
-    utils.setValue('buck-vin', vin);
-    
-    // Update dependent values
-    calculateDutyCycle();
-    calculateTon();
+    calculateAndUpdate(
+        ['buck-vout', 'buck-ilpp', 'buck-inductance', 'buck-fsw'], // Input IDs
+        'buck-vin', // Output ID
+        (vout, ilpp, l, fsw, vdsh, vdsl) => { // Calculation logic
+            const fswHz = utils.mhzToHz(fsw);
+            const lH = l / MICRO_CONVERSION_FACTOR;
+            // Avoid division by zero or near-zero vout
+            if (Math.abs(vout) < 1e-9) return null; 
+            const d = 1 - ((ilpp * fswHz * lH) / vout);
+            // Avoid division by zero or near-zero duty cycle result
+            if (Math.abs(d) < 1e-9) return null; 
+            const vin = (vout + vdsl) / d + vdsh;
+            return vin;
+        }
+    );
 }
 
 // Calculate Vout
@@ -125,14 +152,14 @@ function calculateVout() {
     }
     
     const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
+    const lH = l / MICRO_CONVERSION_FACTOR;
     
     // Iterative solution since Vout appears in both equations
     let vout = vin / 2; // Initial guess
-    for (let i = 0; i < 10; i++) { // Few iterations for convergence
+    for (let i = 0; i < ITERATION_LIMIT; i++) { // Few iterations for convergence
         const d = (vout + vdsl) / (vin - vdsh);
         const vout_new = (ilpp * fswHz * lH) / (1 - d);
-        if (Math.abs(vout - vout_new) < 0.001) {
+        if (Math.abs(vout - vout_new) < CONVERGENCE_THRESHOLD) {
             utils.setValue('buck-vout', vout_new);
             // Update dependent values
             calculateDutyCycle();
@@ -150,91 +177,67 @@ function calculateVout() {
 
 // Calculate inductance
 function calculateL() {
-    const vin = utils.getValue('buck-vin');
-    const vout = utils.getValue('buck-vout');
-    const fsw = utils.getValue('buck-fsw');
-    const ilpp = utils.getValue('buck-ilpp');
-    const vdsh = utils.getValue('buck-vdsh') || 0;
-    const vdsl = utils.getValue('buck-vdsl') || 0;
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, fsw, ilpp], 
-        ['Input Voltage', 'Output Voltage', 'Switching Frequency', 'Current Ripple']
-    )) {
-        return;
-    }
-    
-    const d = (vout + vdsl) / (vin - vdsh);
-    const fswHz = utils.mhzToHz(fsw);
-    
-    // L = (Vout * (1-D)) / (fsw * ΔiL)
-    const lH = (vout * (1 - d)) / (fswHz * ilpp);
-    const luH = lH * 1000000;  // Convert H to µH
-    utils.setValue('buck-inductance', luH);
-    
-    // Update dependent values
-    calculateDutyCycle();
-    calculateTon();
+    calculateAndUpdate(
+        ['buck-vin', 'buck-vout', 'buck-fsw', 'buck-ilpp'], // Input IDs
+        'buck-inductance', // Output ID
+        (vin, vout, fsw, ilpp, vdsh, vdsl) => { // Calculation logic
+            // Avoid division by zero or near-zero denominator
+            const denominator = (vin - vdsh);
+            if (Math.abs(denominator) < 1e-9) return null;
+            const d = (vout + vdsl) / denominator;
+            
+            const fswHz = utils.mhzToHz(fsw);
+             // Avoid division by zero or near-zero fswHz * ilpp
+            if (Math.abs(fswHz * ilpp) < 1e-9) return null;
+            const lH = (vout * (1 - d)) / (fswHz * ilpp);
+            const luH = lH * MICRO_CONVERSION_FACTOR; // Convert H to µH
+            return luH;
+        }
+    );
 }
 
 // Calculate switching frequency
 function calculateFsw() {
-    const vin = utils.getValue('buck-vin');
-    const vout = utils.getValue('buck-vout');
-    const l = utils.getValue('buck-inductance');
-    const ilpp = utils.getValue('buck-ilpp');
-    const vdsh = utils.getValue('buck-vdsh') || 0;
-    const vdsl = utils.getValue('buck-vdsl') || 0;
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, l, ilpp], 
-        ['Input Voltage', 'Output Voltage', 'Inductance', 'Current Ripple']
-    )) {
-        return;
-    }
-    
-    const d = (vout + vdsl) / (vin - vdsh);
-    const lH = l / 1000000;
-    
-    // fsw = (Vout * (1-D)) / (L * ΔiL)
-    const fswHz = (vout * (1 - d)) / (lH * ilpp);
-    const fswMHz = utils.hzToMhz(fswHz);
-    utils.setValue('buck-fsw', fswMHz);
-    
-    // Update dependent values
-    calculateDutyCycle();
-    calculateTon();
+    calculateAndUpdate(
+        ['buck-vin', 'buck-vout', 'buck-inductance', 'buck-ilpp'], // Input IDs
+        'buck-fsw', // Output ID
+        (vin, vout, l, ilpp, vdsh, vdsl) => { // Calculation logic
+             // Avoid division by zero or near-zero denominator
+            const denominator = (vin - vdsh);
+            if (Math.abs(denominator) < 1e-9) return null;
+            const d = (vout + vdsl) / denominator;
+
+            const lH = l / MICRO_CONVERSION_FACTOR;
+            // Avoid division by zero or near-zero denominator
+            const denom_fsw = (lH * ilpp);
+            if (Math.abs(denom_fsw) < 1e-9) return null;
+            const fswHz = (vout * (1 - d)) / denom_fsw;
+            const fswMHz = utils.hzToMhz(fswHz);
+            return fswMHz;
+        }
+    );
 }
 
 // Calculate inductor current ripple
 function calculateIlpp() {
-    const vout = utils.getValue('buck-vout');
-    const vin = utils.getValue('buck-vin');
-    const l = utils.getValue('buck-inductance');
-    const fsw = utils.getValue('buck-fsw');
-    const vdsh = utils.getValue('buck-vdsh') || 0;
-    const vdsl = utils.getValue('buck-vdsl') || 0;
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vout, vin, l, fsw], 
-        ['Output Voltage', 'Input Voltage', 'Inductance', 'Switching Frequency']
-    )) {
-        return;
-    }
-    
-    const d = (vout + vdsl) / (vin - vdsh);
-    const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
-    
-    const ilpp = (vout * (1 - d)) / (fswHz * lH);
-    utils.setValue('buck-ilpp', ilpp);
-    
-    // Update dependent values
-    calculateDutyCycle();
-    calculateTon();
+    calculateAndUpdate(
+        ['buck-vout', 'buck-vin', 'buck-inductance', 'buck-fsw'], // Input IDs
+        'buck-ilpp', // Output ID
+        (vout, vin, l, fsw, vdsh, vdsl) => { // Calculation logic
+            // Avoid division by zero or near-zero denominator
+            const denominator = (vin - vdsh);
+            if (Math.abs(denominator) < 1e-9) return null;
+            const d = (vout + vdsl) / denominator;
+
+            const fswHz = utils.mhzToHz(fsw);
+            const lH = l / MICRO_CONVERSION_FACTOR;
+            // Avoid division by zero or near-zero denominator
+            const denom_ilpp = (fswHz * lH);
+             if (Math.abs(denom_ilpp) < 1e-9) return null;
+            const ilpp = (vout * (1 - d)) / denom_ilpp;
+            return ilpp;
+        }
+    );
 }
 
 // Register calculator with registry

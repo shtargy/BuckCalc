@@ -56,6 +56,43 @@ function getBoostDutyCycle(vin, vout, vdsl = 0) {
     return Math.min(0.99, Math.max(0, 1 - (vin / (vout + vdsl))));
 }
 
+// Helper function to manage calculation flow for Boost converter
+function calculateAndUpdateBoost(inputIds, outputId, calculationFn) {
+    const dependentFns = [calculateBoostDutyCycle, calculateBoostTon, updateCurrentValues];
+    const inputValues = inputIds.map(id => utils.getValue(id));
+    const inputNames = inputIds.map(id => id.replace('boost-', '').toUpperCase());
+
+    // Fetch optional/common values, providing defaults
+    const vdsl = utils.getValue('boost-vdsl') || 0;
+    const vdsh = utils.getValue('boost-vdsh') || 0; // Might be needed too
+
+    if (!utils.validateInputs(inputValues, inputNames)) {
+        return null;
+    }
+
+    // Pass validated inputs and any extra common values needed
+    const result = calculationFn(...inputValues, vdsl, vdsh);
+
+    if (result !== null && result !== undefined && !isNaN(result)) {
+        utils.setValue(outputId, result);
+        dependentFns.forEach(fn => {
+            if (typeof fn === 'function') { 
+                // Basic check to prevent simple direct recursion via helper
+                if (!inputIds.includes(fn.name.replace('calculateBoost', 'boost-').toLowerCase()) && fn.name !== 'updateCurrentValues') {
+                    fn(); 
+                }
+            } 
+            else { console.error('Dependent function is not valid:', fn); }
+        });
+        // Ensure updateCurrentValues runs carefully after setting the main value
+        if (typeof updateCurrentValues === 'function') {
+             updateCurrentValues();
+        }
+        return result;
+    }
+    return null;
+}
+
 // Calculate duty cycle
 function calculateBoostDutyCycle() {
     const vin = utils.getValue('boost-vin');
@@ -122,56 +159,32 @@ function updateCurrentValues() {
 
 // Calculate load current
 function calculateBoostIout() {
-    const ilavg = utils.getValue('boost-ilavg');
-    const vin = utils.getValue('boost-vin');
-    const vout = utils.getValue('boost-vout');
-    const vdsl = utils.getValue('boost-vdsl') || 0;
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [ilavg, vin, vout], 
-        ['Average Inductor Current', 'Input Voltage', 'Output Voltage']
-    )) {
-        return;
-    }
-    
-    // Get duty cycle using helper function
-    const d = getBoostDutyCycle(vin, vout, vdsl);
-    if (d === null) {
-        return;
-    }
-    
-    // For boost: Iout = IL_avg * (1-D)
-    const iout = ilavg * (1 - d);
-    
-    utils.setValue('boost-iout', iout);
+    calculateAndUpdateBoost(
+        ['boost-ilavg', 'boost-vin', 'boost-vout'], // Input IDs
+        'boost-iout', // Output ID
+        (ilavg, vin, vout, vdsl) => { // Calculation logic
+            const d = getBoostDutyCycle(vin, vout, vdsl);
+            if (d === null) return null;
+            // For boost: Iout = IL_avg * (1-D)
+            return ilavg * (1 - d);
+        }
+    );
 }
 
 // Calculate average inductor current
 function calculateBoostILavg() {
-    const iout = utils.getValue('boost-iout');
-    const vin = utils.getValue('boost-vin');
-    const vout = utils.getValue('boost-vout');
-    const vdsl = utils.getValue('boost-vdsl') || 0;
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [iout, vin, vout], 
-        ['Load Current', 'Input Voltage', 'Output Voltage']
-    )) {
-        return;
-    }
-    
-    // Get duty cycle using helper function
-    const d = getBoostDutyCycle(vin, vout, vdsl);
-    if (d === null) {
-        return;
-    }
-    
-    // For boost: IL_avg = Iout / (1-D)
-    const ilavg = iout / (1 - d);
-    
-    utils.setValue('boost-ilavg', ilavg);
+    calculateAndUpdateBoost(
+        ['boost-iout', 'boost-vin', 'boost-vout'], // Input IDs
+        'boost-ilavg', // Output ID
+        (iout, vin, vout, vdsl) => { // Calculation logic
+            const d = getBoostDutyCycle(vin, vout, vdsl);
+            if (d === null) return null;
+            // Ensure we don't divide by zero
+            if (Math.abs(1 - d) < 1e-9) return null; 
+            // For boost: IL_avg = Iout / (1-D)
+            return iout / (1 - d);
+        }
+    );
 }
 
 // Calculate on-time (Ton)
@@ -203,7 +216,7 @@ function calculateBoostTon() {
     const fswHz = utils.mhzToHz(fsw);
     // Calculate Ton in seconds then convert to microseconds
     const tonSeconds = duty / fswHz;
-    const tonMicroseconds = tonSeconds * 1000000;
+    const tonMicroseconds = tonSeconds * MICRO_CONVERSION_FACTOR;
     
     utils.setValue('boost-ton', tonMicroseconds);
 }
@@ -227,14 +240,14 @@ function calculateBoostVin() {
     
     // Using inductor ripple equation for boost
     const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
+    const lH = l / MICRO_CONVERSION_FACTOR;
     
     // For boost: L = (Vin * D) / (fsw * ΔiL)
     // Solve for D first using an iterative approach, since D depends on Vin which we're trying to find
     let d = 0.5; // Initial guess
     let vin = 0;
     
-    for (let i = 0; i < 10; i++) { // Few iterations for convergence
+    for (let i = 0; i < ITERATION_LIMIT; i++) { // Few iterations for convergence
         // For boost: ΔiL = (Vin * D) / (L * fsw)
         // Solving for Vin: Vin = (ΔiL * L * fsw) / D
         vin = (ilpp * lH * fswHz) / d;
@@ -242,7 +255,7 @@ function calculateBoostVin() {
         // Update duty cycle
         const d_new = 1 - (vin / (vout + vdsl));
         
-        if (Math.abs(d - d_new) < 0.001) {
+        if (Math.abs(d - d_new) < CONVERGENCE_THRESHOLD) {
             d = d_new;
             break;
         }
@@ -280,7 +293,7 @@ function calculateBoostVout() {
     }
     
     const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
+    const lH = l / MICRO_CONVERSION_FACTOR;
     
     // For boost: ΔiL = (Vin * D) / (L * fsw)
     // Also: D = 1 - (Vin / (Vout + Vdsl))
@@ -312,130 +325,56 @@ function calculateBoostVout() {
 
 // Calculate inductance
 function calculateBoostL() {
-    const vin = utils.getValue('boost-vin');
-    const vout = utils.getValue('boost-vout');
-    const fsw = utils.getValue('boost-fsw');
-    const ilpp = utils.getValue('boost-ilpp');
-    const vdsh = utils.getValue('boost-vdsh') || 0;
-    const vdsl = utils.getValue('boost-vdsl') || 0;
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, fsw, ilpp], 
-        ['Input Voltage', 'Output Voltage', 'Switching Frequency', 'Current Ripple']
-    )) {
-        return;
-    }
-    
-    // Get duty cycle using helper function
-    const d = getBoostDutyCycle(vin, vout, vdsl);
-    if (d === null) {
-        return;
-    }
-    
-    const fswHz = utils.mhzToHz(fsw);
-    
-    // For boost: L = (Vin * D) / (fsw * ΔiL)
-    const lH = (vin * d) / (fswHz * ilpp);
-    
-    // Ensure inductance is valid
-    if (isNaN(lH) || lH <= 0) {
-        return;
-    }
-    
-    const luH = lH * 1000000;  // Convert H to µH
-    
-    utils.setValue('boost-inductance', luH);
-    
-    // Update dependent values
-    calculateBoostDutyCycle();
-    calculateBoostTon();
-    updateCurrentValues();
+    calculateAndUpdateBoost(
+        ['boost-vin', 'boost-vout', 'boost-fsw', 'boost-ilpp'], // Input IDs
+        'boost-inductance', // Output ID
+        (vin, vout, fsw, ilpp, vdsl) => { // Calculation logic
+            const d = getBoostDutyCycle(vin, vout, vdsl);
+            if (d === null) return null;
+            const fswHz = utils.mhzToHz(fsw);
+            // Ensure we don't divide by zero
+            if (Math.abs(fswHz * ilpp) < 1e-9) return null;
+            // For boost: L = (Vin * D) / (fsw * ΔiL)
+            const lH = (vin * d) / (fswHz * ilpp);
+            return lH * MICRO_CONVERSION_FACTOR; // Convert H to µH
+        }
+    );
 }
 
 // Calculate switching frequency
 function calculateBoostFsw() {
-    const vin = utils.getValue('boost-vin');
-    const vout = utils.getValue('boost-vout');
-    const l = utils.getValue('boost-inductance');
-    const ilpp = utils.getValue('boost-ilpp');
-    const vdsh = utils.getValue('boost-vdsh') || 0;
-    const vdsl = utils.getValue('boost-vdsl') || 0;
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, l, ilpp], 
-        ['Input Voltage', 'Output Voltage', 'Inductance', 'Current Ripple']
-    )) {
-        return;
-    }
-    
-    // Get duty cycle using helper function
-    const d = getBoostDutyCycle(vin, vout, vdsl);
-    if (d === null) {
-        return;
-    }
-    
-    const lH = l / 1000000;
-    
-    // For boost: fsw = (Vin * D) / (L * ΔiL)
-    const fswHz = (vin * d) / (lH * ilpp);
-    
-    // Ensure frequency is valid
-    if (isNaN(fswHz) || fswHz <= 0) {
-        return;
-    }
-    
-    const fswMHz = utils.hzToMhz(fswHz);
-    
-    utils.setValue('boost-fsw', fswMHz);
-    
-    // Update dependent values
-    calculateBoostDutyCycle();
-    calculateBoostTon();
-    updateCurrentValues();
+    calculateAndUpdateBoost(
+        ['boost-vin', 'boost-vout', 'boost-inductance', 'boost-ilpp'], // Input IDs
+        'boost-fsw', // Output ID
+        (vin, vout, l, ilpp, vdsl) => { // Calculation logic
+            const d = getBoostDutyCycle(vin, vout, vdsl);
+            if (d === null) return null;
+            const lH = l / MICRO_CONVERSION_FACTOR;
+            // Ensure we don't divide by zero
+            if (Math.abs(lH * ilpp) < 1e-9) return null;
+            // For boost: fsw = (Vin * D) / (L * ΔiL)
+            const fswHz = (vin * d) / (lH * ilpp);
+            return utils.hzToMhz(fswHz);
+        }
+    );
 }
 
 // Calculate inductor current ripple
 function calculateBoostIlpp() {
-    const vin = utils.getValue('boost-vin');
-    const vout = utils.getValue('boost-vout');
-    const l = utils.getValue('boost-inductance');
-    const fsw = utils.getValue('boost-fsw');
-    const vdsh = utils.getValue('boost-vdsh') || 0;
-    const vdsl = utils.getValue('boost-vdsl') || 0;
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, l, fsw], 
-        ['Input Voltage', 'Output Voltage', 'Inductance', 'Switching Frequency']
-    )) {
-        return;
-    }
-    
-    // Get duty cycle using helper function
-    const d = getBoostDutyCycle(vin, vout, vdsl);
-    if (d === null) {
-        return;
-    }
-    
-    const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
-    
-    // For boost: ΔiL = (Vin * D) / (L * fsw)
-    const ilpp = (vin * d) / (lH * fswHz);
-    
-    // Ensure current ripple is valid
-    if (isNaN(ilpp) || ilpp < 0) {
-        return;
-    }
-    
-    utils.setValue('boost-ilpp', ilpp);
-    
-    // Update dependent values
-    calculateBoostDutyCycle();
-    calculateBoostTon();
-    updateCurrentValues();
+    calculateAndUpdateBoost(
+        ['boost-vin', 'boost-vout', 'boost-inductance', 'boost-fsw'], // Input IDs
+        'boost-ilpp', // Output ID
+        (vin, vout, l, fsw, vdsl) => { // Calculation logic
+            const d = getBoostDutyCycle(vin, vout, vdsl);
+            if (d === null) return null;
+            const lH = l / MICRO_CONVERSION_FACTOR;
+            const fswHz = utils.mhzToHz(fsw);
+            // Ensure we don't divide by zero
+            if (Math.abs(lH * fswHz) < 1e-9) return null;
+            // For boost: ΔiL = (Vin * D) / (L * fsw)
+            return (vin * d) / (lH * fswHz);
+        }
+    );
 }
 
 // Register calculator with registry
@@ -449,7 +388,7 @@ if (window.calculatorRegistry) {
             calculateVout: calculateBoostVout,
             calculateL: calculateBoostL,
             calculateFsw: calculateBoostFsw,
-            calculateIlpp: calculateBoostIlpp,
+            calculateBoostIlpp: calculateBoostIlpp,
             calculateIout: calculateBoostIout,
             calculateILavg: calculateBoostILavg,
             calculateDutyCycle: calculateBoostDutyCycle,
@@ -463,7 +402,7 @@ window.calculateBoostVin = calculateBoostVin;
 window.calculateBoostVout = calculateBoostVout;
 window.calculateBoostL = calculateBoostL;
 window.calculateBoostFsw = calculateBoostFsw;
-window.calculateBoostIlpp = calculateBoostIlpp;
+window.calculateBoostIlpp = calculateBoostIlpp; // <<< Add this line manually
 window.calculateBoostIout = calculateBoostIout;
 window.calculateBoostILavg = calculateBoostILavg;
 window.calculateBoostDutyCycle = calculateBoostDutyCycle;

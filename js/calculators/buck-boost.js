@@ -21,6 +21,25 @@
  * - All functions use common utilities from utils.js for consistency
  */
 
+// Helper function to manage calculation flow for Inverting Buck-Boost
+function calculateAndUpdateIBB(inputIds, outputId, calculationFn) {
+    const inputValues = inputIds.map(id => utils.getValue(id));
+    const inputNames = inputIds.map(id => id.replace('ibb-', '').toUpperCase());
+
+    if (!utils.validateInputs(inputValues, inputNames)) {
+        return null;
+    }
+
+    const result = calculationFn(...inputValues);
+
+    if (result !== null && result !== undefined && !isNaN(result)) {
+        utils.setValue(outputId, result);
+        // No dependent functions seem to be consistently called here
+        return result;
+    }
+    return null;
+}
+
 // Inverting Buck-Boost Calculator Functions
 
 // Helper function to get numeric value from an input field
@@ -48,38 +67,29 @@
 
 // Calculate IL(avg) for Inverting Buck-Boost
 function ibb_calculateILavg() {
-    const vin = utils.getValue('ibb-vin');
-    const vout = utils.getValue('ibb-vout');
-    const iout = utils.getValue('ibb-iout');
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, iout], 
-        ['Input Voltage', 'Output Voltage', 'Output Current']
-    )) {
-        return;
-    }
-    
-    const ilavg = iout * (vin + vout) / vin;
-    utils.setValue('ibb-ilavg', ilavg);
+    calculateAndUpdateIBB(
+        ['ibb-vin', 'ibb-vout', 'ibb-iout'], // Input IDs
+        'ibb-ilavg', // Output ID
+        (vin, vout, iout) => { // Calculation logic
+            // Ensure we don't divide by zero
+            if (Math.abs(vin) < 1e-9) return null;
+            return iout * (vin + vout) / vin;
+        }
+    );
 }
 
 // Calculate Output Current for Inverting Buck-Boost
 function ibb_calculateIout() {
-    const vin = utils.getValue('ibb-vin');
-    const vout = utils.getValue('ibb-vout');
-    const ilavg = utils.getValue('ibb-ilavg');
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, ilavg], 
-        ['Input Voltage', 'Output Voltage', 'Average Inductor Current']
-    )) {
-        return;
-    }
-    
-    const iout = ilavg * vin / (vin + vout);
-    utils.setValue('ibb-iout', iout);
+    calculateAndUpdateIBB(
+        ['ibb-vin', 'ibb-vout', 'ibb-ilavg'], // Input IDs
+        'ibb-iout', // Output ID
+        (vin, vout, ilavg) => { // Calculation logic
+            const denominator = vin + vout;
+            // Ensure we don't divide by zero
+            if (Math.abs(denominator) < 1e-9) return null;
+            return ilavg * vin / denominator;
+        }
+    );
 }
 
 // Calculate Input Voltage for Inverting Buck-Boost
@@ -102,15 +112,15 @@ function ibb_calculateVin() {
     // Initial guess for Vin
     let vin = vout;
     const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
+    const lH = l / MICRO_CONVERSION_FACTOR;
     
     // Newton-Raphson iteration
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < ITERATION_LIMIT; i++) {
         const f1 = ilavg - iout * (vin + vout) / vin;
         const f2 = ilpp - (1 / (fswHz * lH)) * vin * (vout / (vin + vout));
         
         // If both equations are satisfied within tolerance
-        if (Math.abs(f1) < 0.001 && Math.abs(f2) < 0.001) {
+        if (Math.abs(f1) < CONVERGENCE_THRESHOLD && Math.abs(f2) < CONVERGENCE_THRESHOLD) {
             utils.setValue('ibb-vin', vin);
             return;
         }
@@ -145,15 +155,15 @@ function ibb_calculateVout() {
     // Initial guess for Vout
     let vout = vin;
     const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
+    const lH = l / MICRO_CONVERSION_FACTOR;
     
     // Newton-Raphson iteration
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < ITERATION_LIMIT; i++) {
         const f1 = ilavg - iout * (vin + vout) / vin;
         const f2 = ilpp - (1 / (fswHz * lH)) * vin * (vout / (vin + vout));
         
         // If both equations are satisfied within tolerance
-        if (Math.abs(f1) < 0.001 && Math.abs(f2) < 0.001) {
+        if (Math.abs(f1) < CONVERGENCE_THRESHOLD && Math.abs(f2) < CONVERGENCE_THRESHOLD) {
             utils.setValue('ibb-vout', vout);
             return;
         }
@@ -170,65 +180,53 @@ function ibb_calculateVout() {
 
 // Calculate Inductance for Inverting Buck-Boost
 function ibb_calculateL() {
-    const vin = utils.getValue('ibb-vin');
-    const vout = utils.getValue('ibb-vout');
-    const ilpp = utils.getValue('ibb-ilpp');
-    const fsw = utils.getValue('ibb-fsw');
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, ilpp, fsw], 
-        ['Input Voltage', 'Output Voltage', 'Current Ripple', 'Switching Frequency']
-    )) {
-        return;
-    }
-    
-    const fswHz = utils.mhzToHz(fsw);
-    const lH = (vin * vout) / (fswHz * ilpp * (vin + vout));
-    const luH = lH * 1000000;
-    utils.setValue('ibb-inductance', luH);
+    calculateAndUpdateIBB(
+        ['ibb-vin', 'ibb-vout', 'ibb-ilpp', 'ibb-fsw'], // Input IDs
+        'ibb-inductance', // Output ID
+        (vin, vout, ilpp, fsw) => { // Calculation logic
+            const fswHz = utils.mhzToHz(fsw);
+            const denominator = fswHz * ilpp * (vin + vout);
+            // Ensure we don't divide by zero
+            if (Math.abs(denominator) < 1e-9) return null;
+            const lH = (vin * vout) / denominator;
+            return lH * MICRO_CONVERSION_FACTOR;
+        }
+    );
 }
 
 // Calculate Switching Frequency for Inverting Buck-Boost
 function ibb_calculateFsw() {
-    const vin = utils.getValue('ibb-vin');
-    const vout = utils.getValue('ibb-vout');
-    const ilpp = utils.getValue('ibb-ilpp');
-    const l = utils.getValue('ibb-inductance');
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, ilpp, l], 
-        ['Input Voltage', 'Output Voltage', 'Current Ripple', 'Inductance']
-    )) {
-        return;
-    }
-    
-    const lH = l / 1000000;
-    const fswHz = (vin * vout) / (lH * ilpp * (vin + vout));
-    const fswMHz = utils.hzToMhz(fswHz);
-    utils.setValue('ibb-fsw', fswMHz);
+    calculateAndUpdateIBB(
+        ['ibb-vin', 'ibb-vout', 'ibb-ilpp', 'ibb-inductance'], // Input IDs
+        'ibb-fsw', // Output ID
+        (vin, vout, ilpp, l) => { // Calculation logic
+            const lH = l / MICRO_CONVERSION_FACTOR;
+            const denominator = lH * ilpp * (vin + vout);
+            // Ensure we don't divide by zero
+            if (Math.abs(denominator) < 1e-9) return null;
+            const fswHz = (vin * vout) / denominator;
+            return utils.hzToMhz(fswHz);
+        }
+    );
 }
 
 // Calculate Inductor Current Ripple for Inverting Buck-Boost
 function ibb_calculateDeltaIL() {
-    const vin = utils.getValue('ibb-vin');
-    const vout = utils.getValue('ibb-vout');
-    const l = utils.getValue('ibb-inductance');
-    const fsw = utils.getValue('ibb-fsw');
-    
-    // Validate inputs
-    if (!utils.validateInputs(
-        [vin, vout, l, fsw], 
-        ['Input Voltage', 'Output Voltage', 'Inductance', 'Switching Frequency']
-    )) {
-        return;
-    }
-    
-    const fswHz = utils.mhzToHz(fsw);
-    const lH = l / 1000000;
-    const ilpp = (1 / (fswHz * lH)) * vin * (vout / (vin + vout));
-    utils.setValue('ibb-ilpp', ilpp);
+    calculateAndUpdateIBB(
+        ['ibb-vin', 'ibb-vout', 'ibb-inductance', 'ibb-fsw'], // Input IDs
+        'ibb-ilpp', // Output ID
+        (vin, vout, l, fsw) => { // Calculation logic
+            const fswHz = utils.mhzToHz(fsw);
+            const lH = l / MICRO_CONVERSION_FACTOR;
+            const denominator = fswHz * lH * (vin + vout);
+            // Ensure we don't divide by zero
+            if (Math.abs(denominator) < 1e-9) return null; 
+            // Formula is ΔiL = (Vin * D) / (fsw * L) where D = Vout / (Vin+Vout)
+            // Simplified: ΔiL = Vin * (Vout / (Vin+Vout)) / (fsw * L)
+            // ΔiL = Vin * Vout / (fsw * L * (Vin+Vout))
+            return (vin * vout) / denominator;
+        }
+    );
 }
 
 // Register calculator with registry
