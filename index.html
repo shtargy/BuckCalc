@@ -30,6 +30,12 @@
                 <li class="calculator-item" data-calculator="wafer" onclick="selectCalculator('wafer')">
                     Wafer Die Cost
                 </li>
+                <li class="calculator-item" data-calculator="thermal-resistance" onclick="selectCalculator('thermal-resistance')">
+                    Thermal Resistance
+                </li>
+                <li class="calculator-item" data-calculator="rlc" onclick="selectCalculator('rlc')">
+                    RLC
+                </li>
             </ul>
         </div>
 
@@ -527,6 +533,233 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Thermal Resistance Calculator -->
+            <div id="thermal-resistance-calculator" class="calculator">
+                <h2>Thermal Resistance Calculator</h2>
+                <p>Calculates the thermal resistance of a rectangular prism along the Z-direction.</p>
+                
+                <div class="input-group">
+                    <label for="thermal-x">X Dimension:</label>
+                    <input type="number" id="thermal-x" step="any">
+                    <span class="unit">mm</span>
+                    <button class="calc-button" onclick="window.calculateThermalResistance('X')">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="thermal-y">Y Dimension:</label>
+                    <input type="number" id="thermal-y" step="any">
+                    <span class="unit">mm</span>
+                    <button class="calc-button" onclick="window.calculateThermalResistance('Y')">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="thermal-z">Z Dimension:</label>
+                    <input type="number" id="thermal-z" step="any">
+                    <span class="unit">mm</span>
+                     <button class="calc-button" onclick="window.calculateThermalResistance('Z')">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="thermal-k">Thermal Conductivity:</label>
+                    <input type="number" id="thermal-k" step="any">
+                    <span class="unit">W/(m·K)</span>
+                     <button class="calc-button" onclick="window.calculateThermalResistance('K')">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="thermal-rth">Thermal Resistance:</label>
+                    <input type="number" id="thermal-rth" step="any">
+                    <span class="unit">K/W</span>
+                     <button class="calc-button" onclick="window.calculateThermalResistance('Rth')">Calculate</button>
+                </div>
+
+                <p id="thermal-error" class="error-message"></p>
+            </div>
+
+            <!-- RLC Calculator -->
+            <div id="rlc-calculator" class="calculator">
+                <h2>RLC Calculator</h2>
+
+                <!-- RC Time Constant & Cutoff Frequency Section -->
+                <div id="rc-calc" class="calculator-section">
+                    <h3>RC Time Constant & Cutoff Frequency</h3>
+                    <p>Calculates the time constant (τ) and cutoff frequency (f<sub>c</sub>) of an RC circuit.</p>
+                    
+                    <div class="input-group-sci">
+                        <label for="rc-r-val">Resistance (R):</label>
+                        <input type="number" step="any" id="rc-r-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="rc-r-exp" placeholder="Exp">
+                        <span class="unit">Ω</span>
+                    </div>
+
+                    <div class="input-group-sci">
+                        <label for="rc-c-val">Capacitance (C):</label>
+                        <input type="number" step="any" id="rc-c-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="rc-c-exp" placeholder="Exp">
+                        <span class="unit">F</span>
+                    </div>
+
+                    <button class="calc-button" onclick="calculateRC()">Calculate τ & f<sub>c</sub></button>
+
+                    <div class="result-group-sci">
+                        <label for="rc-tau-val">Time Constant (τ):</label>
+                        <input type="number" step="any" id="rc-tau-val" readonly placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="rc-tau-exp" readonly placeholder="Exp">
+                        <span class="unit">s</span>
+                    </div>
+
+                     <div class="result-group-sci">
+                        <label for="rc-fc-val">Cutoff Frequency (f<sub>c</sub>):</label>
+                        <input type="number" step="any" id="rc-fc-val" readonly placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="rc-fc-exp" readonly placeholder="Exp">
+                        <span class="unit">Hz</span>
+                    </div>
+
+                    <div id="rc-error" class="error-message"></div>
+                </div>
+
+                <hr>
+
+                <!-- Reactance Calculator Section -->
+                <div id="reactance-calc" class="calculator-section">
+                    <h3>Reactance Calculator</h3>
+                    <p>Calculate capacitive reactance (X<sub>c</sub> = 1/(2πfC)) or inductive reactance (X<sub>L</sub> = 2πfL) or related variables. Provide the known values and click calculate for the unknown.</p>
+
+                    <div class="input-group-sci">
+                        <label for="reactance-f-val">Frequency (f):</label>
+                        <input type="number" step="any" id="reactance-f-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="reactance-f-exp" placeholder="Exp">
+                        <span class="unit">Hz</span>
+                        <button class="calc-button" onclick="calculateReactance('f')">Calculate</button>
+                    </div>
+
+                    <div class="input-group-sci">
+                        <label for="reactance-c-val">Capacitance (C):</label>
+                        <input type="number" step="any" id="reactance-c-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="reactance-c-exp" placeholder="Exp">
+                        <span class="unit">F</span>
+                        <button class="calc-button" onclick="calculateReactance('C')">Calculate</button>
+                    </div>
+
+                    <div class="input-group-sci">
+                        <label for="reactance-l-val">Inductance (L):</label>
+                        <input type="number" step="any" id="reactance-l-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="reactance-l-exp" placeholder="Exp">
+                        <span class="unit">H</span>
+                        <button class="calc-button" onclick="calculateReactance('L')">Calculate</button>
+                    </div>
+
+                    <div class="input-group-sci">
+                        <label for="reactance-xc-val">Capacitive Reactance (X<sub>c</sub>):</label>
+                        <input type="number" step="any" id="reactance-xc-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="reactance-xc-exp" placeholder="Exp">
+                        <span class="unit">Ω</span>
+                        <button class="calc-button" onclick="calculateReactance('Xc')">Calculate</button>
+                    </div>
+
+                    <div class="input-group-sci">
+                        <label for="reactance-xl-val">Inductive Reactance (X<sub>L</sub>):</label>
+                        <input type="number" step="any" id="reactance-xl-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="reactance-xl-exp" placeholder="Exp">
+                        <span class="unit">Ω</span>
+                        <button class="calc-button" onclick="calculateReactance('XL')">Calculate</button>
+                    </div>
+
+                    <div id="reactance-error" class="error-message"></div>
+                </div>
+
+                <hr>
+
+                <!-- LC Resonance Calculator Section -->
+                <div id="lc-calc" class="calculator-section">
+                    <h3>LC Resonance Calculator</h3>
+                    <p>Calculate the resonant frequency (f<sub>0</sub> = 1/(2π√(LC))) or related LC components. Provide two values to solve for the third.</p>
+                    
+                    <div class="input-group-sci">
+                        <label for="lc-l-val">Inductance (L):</label>
+                        <input type="number" step="any" id="lc-l-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="lc-l-exp" placeholder="Exp">
+                        <span class="unit">H</span>
+                        <button class="calc-button" onclick="calculateLC('L')">Calculate</button>
+                    </div>
+
+                    <div class="input-group-sci">
+                        <label for="lc-c-val">Capacitance (C):</label>
+                        <input type="number" step="any" id="lc-c-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="lc-c-exp" placeholder="Exp">
+                        <span class="unit">F</span>
+                        <button class="calc-button" onclick="calculateLC('C')">Calculate</button>
+                    </div>
+
+                    <div class="input-group-sci">
+                        <label for="lc-f0-val">Resonant Frequency (f<sub>0</sub>):</label>
+                        <input type="number" step="any" id="lc-f0-val" placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="lc-f0-exp" placeholder="Exp">
+                        <span class="unit">Hz</span>
+                        <button class="calc-button" onclick="calculateLC('f0')">Calculate</button>
+                    </div>
+                    
+                    <div id="lc-error" class="error-message"></div>
+                </div>
+
+                <hr>
+
+                <!-- Series/Parallel Component Calculator Section -->
+                <div class="calculator-section">
+                    <h3>Series/Parallel Component Calculator</h3>
+                    <p>Calculate the equivalent resistance, inductance, or capacitance of components connected in series or parallel.</p>
+                    
+                    <div class="input-group">
+                        <label>Connection Type:</label>
+                        <select id="equiv-connection">
+                            <option value="series">Series</option>
+                            <option value="parallel">Parallel</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Component Type:</label>
+                        <select id="equiv-type">
+                            <option value="R">Resistor</option>
+                            <option value="L">Inductor</option>
+                            <option value="C">Capacitor</option>
+                        </select>
+                    </div>
+
+                    <div id="equiv-inputs">
+                        <!-- Dynamic input fields will be added here -->
+                    </div>
+                    
+                    <!-- Container for action buttons -->
+                    <div class="equiv-actions">
+                         <button class="calc-button add-component-button" id="equiv-add-button">Add Component</button>
+                        <button class="calc-button" onclick="calculateEquivalent()">Calculate Equivalent</button>
+                    </div>
+
+                    <div class="result-group-sci">
+                        <label for="equiv-result-val">Equivalent Value:</label>
+                        <input type="number" step="any" id="equiv-result-val" readonly placeholder="Value">
+                        <span class="exponent-label"> × 10^</span>
+                        <input type="number" step="1" id="equiv-result-exp" readonly placeholder="Exp">
+                        <span class="unit" id="equiv-unit">Ω</span>
+                    </div>
+
+                    <div id="equiv-error" class="error-message"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -539,5 +772,7 @@
     <script src="js/calculators/buck-boost.js"></script>
     <script src="js/calculators/pcb.js"></script>
     <script src="js/calculators/wafer.js"></script>
+    <script src="js/calculators/thermal_resistance.js"></script>
+    <script src="js/calculators/rlc.js"></script>
 </body>
 </html> 

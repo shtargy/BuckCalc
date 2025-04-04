@@ -321,4 +321,127 @@ body {
     color: #333;
     padding-bottom: 8px;
     margin-bottom: 15px;
+}
+
+/* Styles for Scientific Notation Input Groups */
+.input-group-sci,
+.result-group-sci {
+    display: flex;
+    align-items: center; /* Vertically align items */
+    margin-bottom: 15px; /* Space between rows */
+    flex-wrap: nowrap; /* Prevent wrapping */
+}
+
+.input-group-sci label,
+.result-group-sci label {
+    min-width: 180px; /* Adjust as needed for consistent label width */
+    margin-right: 10px;
+    text-align: right;
+}
+
+.input-group-sci input[type="number"],
+.result-group-sci input[type="number"] {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-right: 5px; /* Space between inputs/spans */
+}
+
+/* Style for the value input field */
+.input-group-sci input[id$="-val"],
+.result-group-sci input[id$="-val"] {
+    width: 100px; /* Adjust width for value */
+}
+
+/* Style for the exponent input field */
+.input-group-sci input[id$="-exp"],
+.result-group-sci input[id$="-exp"] {
+    width: 60px; /* Adjust width for exponent */
+}
+
+.exponent-label {
+    margin: 0 5px; /* Space around the 'x 10^' text */
+    white-space: nowrap;
+}
+
+.input-group-sci .unit,
+.result-group-sci .unit {
+    margin-left: 5px; /* Space before the unit */
+    min-width: 25px; /* Ensure space for units */
+    text-align: left;
+}
+
+/* Optional: Hide number input spinners */
+.input-group-sci input[type="number"]::-webkit-outer-spin-button,
+.input-group-sci input[type="number"]::-webkit-inner-spin-button,
+.result-group-sci input[type="number"]::-webkit-outer-spin-button,
+.result-group-sci input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.input-group-sci input[type="number"],
+.result-group-sci input[type="number"] {
+    -moz-appearance: textfield; /* Firefox */
+}
+
+/* Readonly styles for result groups */
+.result-group-sci input[readonly] {
+    background-color: #eee; /* Lighter background for readonly */
+    cursor: default;
+}
+
+/* Adjust button margin if needed */
+#rc-calc .calc-button {
+    margin-left: 190px; /* Align button roughly under inputs */
+    margin-bottom: 15px;
+}
+
+/* Align Series/Parallel action buttons */
+.equiv-actions {
+    display: flex;
+    /* Align with the labels of input groups (adjust margin-left as needed based on label width) */
+    margin-left: 190px; 
+    margin-bottom: 15px;
+}
+
+.equiv-actions .calc-button {
+    margin-right: 10px; /* Space between buttons */
+}
+
+/* Style the small remove button */
+.component-input-row .remove-button {
+    background-color: #f8f9fa; /* Light background */
+    border: 1px solid #dee2e6; /* Light border */
+    color: #6c757d; /* Grey text */
+    padding: 2px 6px;
+    font-size: 12px;
+    line-height: 1;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px; /* Space before remove button */
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.component-input-row .remove-button:hover {
+    background-color: #e9ecef; /* Slightly darker on hover */
+    color: #dc3545; /* Red color on hover */
+}
+
+/* Ensure labels in component rows have enough space */
+.component-input-row label {
+     min-width: 40px; /* Smaller min-width for C1:, R1: etc. */
+     text-align: right;
+     margin-right: 10px;
+}
+
+/* Override general label width for component rows */
+.input-group-sci.component-input-row label {
+    min-width: 40px; 
+}
+
+/* Adjust the container holding dynamic rows if needed */
+#equiv-inputs {
+    margin-left: 150px; /* Indent the component rows slightly */
 } 
