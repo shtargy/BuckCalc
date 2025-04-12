@@ -444,4 +444,13 @@ body {
 /* Adjust the container holding dynamic rows if needed */
 #equiv-inputs {
     margin-left: 150px; /* Indent the component rows slightly */
+}
+
+/* Align the calculate button container (used in Coupled Inductor calc) */
+.calc-button-container {
+    display: flex;
+    /* Align with the labels of input groups (adjust margin-left as needed based on label width) */
+    margin-left: 190px; 
+    margin-top: 15px;  /* Add some space above the button */
+    margin-bottom: 15px; /* Space below the button */
 } 

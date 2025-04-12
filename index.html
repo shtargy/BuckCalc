@@ -36,6 +36,9 @@
                 <li class="calculator-item" data-calculator="rlc" onclick="selectCalculator('rlc')">
                     RLC
                 </li>
+                <li class="calculator-item" data-calculator="coupled-inductor" onclick="selectCalculator('coupled-inductor')">
+                    Coupled Inductors
+                </li>
             </ul>
         </div>
 
@@ -760,6 +763,93 @@
                     <div id="equiv-error" class="error-message"></div>
                 </div>
             </div>
+
+            <!-- Coupled Inductor Ripple Current Calculator Section -->
+            <div id="coupled-inductor-calculator" class="calculator">
+                <h2>Coupled Inductor Ripple</h2>
+                <p>Calculates the ripple current for discrete (`dIL_DL`) and coupled (`dIL_CL`) inductors in a multiphase buck converter topology, based on input/output voltages, inductance values, frequency, and phase count.</p>
+                
+                <div class="input-group-sci">
+                    <label for="ci-vin-val">Input Voltage (V<sub>IN</sub>):</label>
+                    <input type="number" step="any" id="ci-vin-val" placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-vin-exp" placeholder="Exp">
+                    <span class="unit">V</span>
+                </div>
+                <div class="input-group-sci">
+                    <label for="ci-vout-val">Output Voltage (V<sub>OUT</sub>):</label>
+                    <input type="number" step="any" id="ci-vout-val" placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-vout-exp" placeholder="Exp">
+                    <span class="unit">V</span>
+                </div>
+                <div class="input-group-sci">
+                    <label for="ci-lm-val">Mutual Inductance (L<sub>m</sub>):</label>
+                    <input type="number" step="any" id="ci-lm-val" placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-lm-exp" placeholder="Exp">
+                    <span class="unit">H</span>
+                </div>
+                <div class="input-group-sci">
+                    <label for="ci-l-val">Self Inductance (L):</label>
+                    <input type="number" step="any" id="ci-l-val" placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-l-exp" placeholder="Exp">
+                    <span class="unit">H</span>
+                </div>
+                 <div class="input-group-sci">
+                    <label for="ci-fs-val">Switching Frequency (F<sub>S</sub>):</label>
+                    <input type="number" step="any" id="ci-fs-val" placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-fs-exp" placeholder="Exp">
+                    <span class="unit">Hz</span>
+                </div>
+                 <div class="input-group-sci">
+                    <label for="ci-nph-val">Number of Phases (N<sub>ph</sub>):</label>
+                    <input type="number" step="1" id="ci-nph-val" placeholder="Value" min="2">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" value="0" id="ci-nph-exp" placeholder="Exp" readonly> <!-- Exponent is always 0 for Nph -->
+                    <span class="unit"></span>
+                </div>
+
+                <div class="calc-button-container">
+                     <button class="calc-button" onclick="calculateCoupledInductorRipple()">Calculate Ripple Currents</button>
+                </div>
+
+                <!-- Intermediate Results -->
+                <div class="result-group-sci">
+                    <label for="ci-d-val">Duty Cycle (D):</label>
+                    <input type="number" step="any" id="ci-d-val" readonly placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-d-exp" readonly placeholder="Exp">
+                    <span class="unit"></span> <!-- Unitless -->
+                </div>
+                 <div class="result-group-sci">
+                    <label for="ci-fom-val">Figure of Merit (FOM):</label>
+                    <input type="number" step="any" id="ci-fom-val" readonly placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-fom-exp" readonly placeholder="Exp">
+                    <span class="unit"></span> <!-- Unitless -->
+                </div>
+
+                <!-- Final Results -->
+                <div class="result-group-sci">
+                    <label for="ci-dildl-val">Discrete Ripple (dIL<sub>DL</sub>):</label>
+                    <input type="number" step="any" id="ci-dildl-val" readonly placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-dildl-exp" readonly placeholder="Exp">
+                    <span class="unit">A</span>
+                </div>
+                <div class="result-group-sci">
+                    <label for="ci-dilcl-val">Coupled Ripple (dIL<sub>CL</sub>):</label>
+                    <input type="number" step="any" id="ci-dilcl-val" readonly placeholder="Value">
+                    <span class="exponent-label"> × 10^</span>
+                    <input type="number" step="1" id="ci-dilcl-exp" readonly placeholder="Exp">
+                    <span class="unit">A</span>
+                </div>
+
+                <div id="ci-error" class="error-message"></div>
+            </div>
         </div>
     </div>
 
@@ -774,5 +864,6 @@
     <script src="js/calculators/wafer.js"></script>
     <script src="js/calculators/thermal_resistance.js"></script>
     <script src="js/calculators/rlc.js"></script>
+    <script src="js/calculators/coupled_inductors.js"></script>
 </body>
 </html> 
