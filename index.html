@@ -24,6 +24,9 @@
                 <li class="calculator-item" data-calculator="divider" onclick="selectCalculator('divider')">
                     Resistor Divider
                 </li>
+                <li class="calculator-item" data-calculator="res-std-values" onclick="selectCalculator('res-std-values')">
+                    Res Std Values
+                </li>
                 <li class="calculator-item" data-calculator="pcb" onclick="selectCalculator('pcb')">
                     PCB
                 </li>
@@ -212,13 +215,6 @@
                 </div>
 
                 <div class="input-group">
-                    <label for="ibb-ilavg">IL(avg):</label>
-                    <input type="number" id="ibb-ilavg" step="0.1">
-                    <span class="unit">A</span>
-                    <button class="calc-button" onclick="window.ibb_calculateILavg()">Calculate</button>
-                </div>
-
-                <div class="input-group">
                     <label for="ibb-iout">Output Current:</label>
                     <input type="number" id="ibb-iout" step="0.1">
                     <span class="unit">A</span>
@@ -240,10 +236,24 @@
                 </div>
 
                 <div class="input-group">
+                    <label for="ibb-ilavg">IL(avg):</label>
+                    <input type="number" id="ibb-ilavg" step="0.1">
+                    <span class="unit">A</span>
+                    <button class="calc-button" onclick="window.ibb_calculateILavg()">Calculate</button>
+                </div>
+
+                <div class="input-group">
                     <label for="ibb-ilpp">ΔIL:</label>
                     <input type="number" id="ibb-ilpp" step="0.1">
                     <span class="unit">A</span>
                     <button class="calc-button" onclick="window.ibb_calculateDeltaIL()">Calculate</button>
+                </div>
+
+                <div class="input-group">
+                    <label for="ibb-duty">Duty Cycle:</label>
+                    <input type="number" id="ibb-duty" step="0.01" readonly>
+                    <span class="unit">%</span>
+                    <button class="calc-button" onclick="window.ibb_calculateDutyCycle()">Calculate</button>
                 </div>
             </div>
 
@@ -333,6 +343,53 @@
                             <tbody>
                                 <tr id="placeholder-row">
                                     <td colspan="7">Select a tolerance button to see standard resistor pairs</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Res Std Values Calculator -->
+            <div id="res-std-values-calculator" class="calculator">
+                <h2>Standard Resistor Finder</h2>
+                
+                <div class="input-group">
+                    <label for="rsv-target-resistor">Target Resistor Value:</label>
+                    <input type="number" id="rsv-target-resistor" step="any">
+                    <span class="unit">Ω</span>
+                </div>
+
+                <div class="input-group">
+                    <label for="rsv-voltage">Voltage (for Current):</label>
+                    <input type="number" id="rsv-voltage" step="any">
+                    <span class="unit">V</span>
+                </div>
+
+                <div class="standard-values-group">
+                    <label>Find Standard Values (Tolerance):</label>
+                    <div class="standard-buttons">
+                        <button class="standard-button" id="rsv-std-01" onclick="window.rsv_findStandardValues('0.1')">0.1%</button>
+                        <button class="standard-button" id="rsv-std-1" onclick="window.rsv_findStandardValues('1')">1%</button>
+                        <button class="standard-button" id="rsv-std-5" onclick="window.rsv_findStandardValues('5')">5%</button>
+                    </div>
+                </div>
+
+                <div id="rsv-table-container" style="margin-top: 20px;">
+                    <h3 id="rsv-table-title">Nearby Standard Resistor Values:</h3>
+                    <div class="table-container">
+                        <table id="rsv-values-table" class="standard-pairs-table"> <!-- Reusing class for styling -->
+                            <thead>
+                                <tr>
+                                    <th>Standard Value (Ω)</th>
+                                    <th>Error (%)</th>
+                                    <th id="rsv-current-col-header">Current (mA)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Rows will be added here by JavaScript -->
+                                <tr id="rsv-placeholder-row">
+                                    <td colspan="3">Enter a target resistor and select a tolerance.</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -860,6 +917,7 @@
     <script src="js/calculators/buck.js"></script>
     <script src="js/calculators/boost.js"></script>
     <script src="js/calculators/buck-boost.js"></script>
+    <script src="js/calculators/res-std-values.js"></script>
     <script src="js/calculators/pcb.js"></script>
     <script src="js/calculators/wafer.js"></script>
     <script src="js/calculators/thermal_resistance.js"></script>

@@ -243,3 +243,56 @@ The project currently includes these calculators:
 3. **Resistor Divider** (`divider.js`): Voltage divider and resistor pair calculator
 
 You can reference these implementations as examples when creating new calculators. 
+
+
+
+
+Notes here for updating the standard value algorithm:
+
+wanted to refine the standard resistor values algorithm in the resistor divider calculator. 
+
+To review, the idea is we have a resistor divider calculator that helps the user calculate all aspects of a resistor divider with two resistors. But in reality, resistors are availible only on discrete values. Common categories are 0.1%, 1%, and 5% resistor values which we have included.
+
+I want to update the algoritm by which the calculator searches for best discrete standard values of resistors closest to the user calculated ideal values. 
+
+details here:
+- you can remove anything related to the E12 values those are only for 10% resistor values which we are not using
+- to review we are offering 3 buttons for user to search and suggest best discrete standard resistor values closest to the ideal ratio and close to the resistor string current
+- we use the E24 for the 5%
+- we use the E96 for the 1%
+- we use the E192 for the 0.1%
+- these E values are base values and can be multiplied by orders of maginitude for larger and smaller values, so as part of the algorithm, we'll have to make sure we compute those as needed
+- here's the idea for a good algorithm to find standard values:
+
+-- be aware of the ideal resistor ratio from the earlier calculation; its calculated and reported to user as "Resistor Ratio:"
+-- compute/find 5-10 standard discrete values above and below the "Top resistor" and "Bottom resistor" from the ideal calculation. Use the correct E series and make sure to apply orders of magnitude.
+-- Now with the list of candadate standard resistors, search and save all pairs of "Top resistor" and "Bottom resistor" that have
+--- better than 0.15% ratio error for the 0.1% button, 
+--- better than 1.5% ratio error for the 1% button, 
+--- better than 7.5% ratio error for the 5% button
+-- Once we have all these candidates, we sort them two ways:
+-- one way is sort by best ratio errors
+-- second way is sort by best resistor string current error
+-- user has the buttons to display top 10 of these results for either ratio or current 
+
+review the code base, check all the code, figure out strategy, and ask me if any clarifications before making changes. Thanks
+
+
+
+
+Wafer Die Cost
+
+Fields:
+- die size X
+- die size Y
+- scribe width
+- wafer size (selection 150, 200, 300mm)
+- wafer edge keepout (mm)
+- wafer cost
+- yield
+- Rds(on).mm2
+- gross die per wafer
+- yielded die per wafer
+- die cost
+- cents/mm
+- cents.mohm

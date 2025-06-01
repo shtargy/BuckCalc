@@ -117,3 +117,27 @@ Tips:
 - Results are displayed with 2 decimal places for readability
 - Use the sidebar to switch between different calculators at any time
 - Clear the fields and start over if you want to perform new calculations 
+
+
+\begin{align}
+dIL_{DL} &= \frac{V_{IN} - V_{OUT}}{L} \times \frac{D}{F_S} \label{eq:dildl_corr} \\
+dIL_{CL} &= \frac{V_{IN} - V_{OUT}}{L} \times \frac{D}{F_S} \times \frac{1}{FOM(D, N_{ph}, \rho, j)} \label{eq:dilcl_corr} \\
+FOM &= \frac{1 + \frac{\rho}{\rho + 1} \times \frac{1}{N_{ph} - 1}}{1 - \left[ (N_{ph} - 2j - 2) + \frac{j(j + 1)}{N_{ph} D} + \frac{N_{ph} D (N_{ph} - 2j - 1) + j(j + 1)}{N_{ph} (1 - D)} \right] \times \frac{\rho}{\rho + 1} \times \frac{1}{N_{ph} - 1}} \label{eq:fom_corr} \\
+\rho &= \frac{L_m}{L} \label{eq:rho_corr} \\
+j &= \text{floor}(D \times N_{ph}) \label{eq:j_corr} \\
+D &= \frac{V_{OUT}}{V_{IN}}
+\end{align}
+
+
+solve for:
+dIL_{DL}
+dIL_{CL}
+
+and user needs to provide:
+
+V_{IN}
+V_{OUT}
+L_m
+L
+F_S
+N_{ph}
