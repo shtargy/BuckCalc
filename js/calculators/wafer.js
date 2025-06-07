@@ -761,6 +761,24 @@ function calculatePowerFetCents() {
     utils.setValue('wafer-power-fet-cents', powerFetCents.toFixed(3));
 }
 
+/**
+ * New function to calculate Die X and Die Y from a given Die Area.
+ * Assumes a square die. Populates the Die Size X and Die Size Y fields.
+ */
+window.calculateXYFromArea = function() {
+    const dieArea = utils.getValue('wafer-die-area');
+
+    if (dieArea <= 0) {
+        alert('Please enter a positive value for Die XY Area.');
+        return;
+    }
+
+    const side = Math.sqrt(dieArea);
+
+    utils.setValue('wafer-die-x', side.toFixed(4));
+    utils.setValue('wafer-die-y', side.toFixed(4));
+}
+
 // Register calculator with registry
 if (window.calculatorRegistry) {
     window.calculatorRegistry.register(
