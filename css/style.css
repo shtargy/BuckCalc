@@ -76,7 +76,7 @@ body {
 
 /* Input groups */
 .input-group {
-    margin-bottom: 15px;
+    margin-bottom: 8px;
     display: grid;
     grid-template-columns: 150px 140px 70px 100px auto;
     align-items: center;

@@ -488,45 +488,39 @@
 
                 <h3>Die Specifications</h3>
                 <div class="input-group">
-                    <label for="wafer-die-area">Die XY Area (mm²):</label>
+                    <label for="wafer-die-area">Die XY Area:</label>
                     <input type="number" id="wafer-die-area" step="any">
-                    <span></span>
-                    <button class="calc-button" onclick="window.calculateXYFromArea()">Root XY</button>
+                    <span class="unit">mm²</span>
                 </div>
 
                 <div class="input-group">
                     <label for="wafer-die-x">Die Size X:</label>
                     <input type="number" id="wafer-die-x" step="0.1">
                     <span class="unit">mm</span>
-                    <button class="calc-button" onclick="window.calculateDieX()">Calculate</button>
                 </div>
                 
                 <div class="input-group">
                     <label for="wafer-die-y">Die Size Y:</label>
                     <input type="number" id="wafer-die-y" step="0.1">
                     <span class="unit">mm</span>
-                    <button class="calc-button" onclick="window.calculateDieY()">Calculate</button>
                 </div>
                 
                 <div class="input-group">
                     <label for="wafer-saw-street">Saw Street:</label>
                     <input type="number" id="wafer-saw-street" step="0.1">
                     <span class="unit">µm</span>
-                    <button class="calc-button" onclick="window.calculateSawStreet()">Calculate</button>
                 </div>
                 
                 <div class="input-group">
                     <label for="wafer-yield">Yield:</label>
                     <input type="number" id="wafer-yield" step="0.1">
                     <span class="unit">%</span>
-                    <button class="calc-button" onclick="window.calculateYield()">Calculate</button>
                 </div>
                 
                 <div class="input-group">
                     <label for="wafer-rds">Rds(on) x mm²:</label>
                     <input type="number" id="wafer-rds" step="0.001">
                     <span class="unit">mΩ·mm²</span>
-                    <button class="calc-button" onclick="window.calculateRds()">Calculate</button>
                 </div>
 
                 <h3>Wafer Specifications</h3>
@@ -538,21 +532,18 @@
                         <option value="300" selected>300 mm</option>
                     </select>
                     <span class="unit">mm</span>
-                    <button class="calc-button" onclick="window.calculateWaferSize()">Calculate</button>
                 </div>
                 
                 <div class="input-group">
                     <label for="wafer-edge-keepout">Edge Keepout:</label>
                     <input type="number" id="wafer-edge-keepout" step="0.1">
                     <span class="unit">mm</span>
-                    <button class="calc-button" onclick="window.calculateEdgeKeepout()">Calculate</button>
                 </div>
                 
                 <div class="input-group">
                     <label for="wafer-cost">Wafer Cost:</label>
                     <input type="number" id="wafer-cost" step="0.01">
                     <span class="unit">$</span>
-                    <button class="calc-button" onclick="window.calculateWaferCost()">Calculate</button>
                 </div>
 
                 <div class="calculator-section">
@@ -562,35 +553,36 @@
                         <label for="wafer-gross-dies">Gross Die Per Wafer:</label>
                         <input type="number" id="wafer-gross-dies" readonly>
                         <span class="unit">dies</span>
-                        <button class="calc-button" onclick="window.calculateGrossDies()">Calculate</button>
                     </div>
                     
                     <div class="input-group">
                         <label for="wafer-yielded-dies">Yielded Die Per Wafer:</label>
                         <input type="number" id="wafer-yielded-dies" readonly>
                         <span class="unit">dies</span>
-                        <button class="calc-button" onclick="window.calculateYieldedDies()">Calculate</button>
                     </div>
                     
                     <div class="input-group">
                         <label for="wafer-cost-per-die">Yielded Cost Per Die:</label>
                         <input type="number" id="wafer-cost-per-die" readonly>
                         <span class="unit">$</span>
-                        <button class="calc-button" onclick="window.calculateCostPerDie()">Calculate</button>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="wafer-die-area-output">Die Area:</label>
+                        <input type="number" id="wafer-die-area-output" readonly>
+                        <span class="unit">mm²</span>
                     </div>
                     
                     <div class="input-group">
                         <label for="wafer-cents-per-mm">Cents/mm² of Wafer:</label>
                         <input type="number" id="wafer-cents-per-mm" readonly>
                         <span class="unit">¢/mm²</span>
-                        <button class="calc-button" onclick="window.calculateCentsPerMm()">Calculate</button>
                     </div>
                     
                     <div class="input-group">
                         <label for="wafer-power-fet-cents">Power FET cents·mΩ:</label>
                         <input type="number" id="wafer-power-fet-cents" readonly>
                         <span class="unit">¢·mΩ</span>
-                        <button class="calc-button" onclick="window.calculatePowerFetCents()">Calculate</button>
                     </div>
                 </div>
             </div>

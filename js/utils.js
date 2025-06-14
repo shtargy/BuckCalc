@@ -124,6 +124,7 @@ function setValue(id, value, decimals = 2) {
  * 
  * @param {Array<number|null>} fields - Array of field values to validate
  * @param {Array<string>} fieldNames - Array of field names (for error messages)
+ * @param {boolean} silent - Whether to prevent showing an alert (default: false)
  * @returns {boolean} - True if all fields have values, false otherwise
  * 
  * @example
@@ -135,7 +136,7 @@ function setValue(id, value, decimals = 2) {
  *     return; // Exit early if validation fails
  * }
  */
-function validateInputs(fields, fieldNames) {
+function validateInputs(fields, fieldNames, silent = false) {
     const missing = [];
     
     for (let i = 0; i < fields.length; i++) {
@@ -145,7 +146,9 @@ function validateInputs(fields, fieldNames) {
     }
     
     if (missing.length > 0) {
-        alert(`Please enter values for: ${missing.join(', ')}`);
+        if (!silent) {
+            alert(`Please enter values for: ${missing.join(', ')}`);
+        }
         return false;
     }
     
