@@ -1,129 +1,101 @@
-window.calculateThermalResistance = function(targetVariable) {
-    const xInput = document.getElementById('thermal-x');
-    const yInput = document.getElementById('thermal-y');
-    const zInput = document.getElementById('thermal-z');
-    const kInput = document.getElementById('thermal-k');
-    const rthInput = document.getElementById('thermal-rth');
-    const errorElement = document.getElementById('thermal-error');
+'use strict';
 
-    const inputs = [
-        { el: xInput, name: 'X', value: parseFloat(xInput.value) || null },
-        { el: yInput, name: 'Y', value: parseFloat(yInput.value) || null },
-        { el: zInput, name: 'Z', value: parseFloat(zInput.value) || null },
-        { el: kInput, name: 'K', value: parseFloat(kInput.value) || null },
-        { el: rthInput, name: 'Rth', value: parseFloat(rthInput.value) || null }
-    ];
+(function() {
+    // DOM Element References
+    const elements = {
+        x: document.getElementById('thermal-x'),
+        y: document.getElementById('thermal-y'),
+        z: document.getElementById('thermal-z'),
+        k: document.getElementById('thermal-k'),
+        rth: document.getElementById('thermal-rth'),
+        error: document.getElementById('thermal-error')
+    };
 
-    let targetInput = inputs.find(i => i.name === targetVariable);
-    if (!targetInput) {
-        errorElement.textContent = 'Error: Invalid calculation target specified.';
-        return;
-    }
+    const buttons = {
+        x: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(1) button'),
+        y: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(2) button'),
+        z: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(3) button'),
+        k: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(4) button'),
+        rth: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(5) button')
+    };
     
-    errorElement.textContent = ''; // Clear previous errors
+    // Attach Event Listeners
+    if(buttons.x) buttons.x.addEventListener('click', () => calculate('x'));
+    if(buttons.y) buttons.y.addEventListener('click', () => calculate('y'));
+    if(buttons.z) buttons.z.addEventListener('click', () => calculate('z'));
+    if(buttons.k) buttons.k.addEventListener('click', () => calculate('k'));
+    if(buttons.rth) buttons.rth.addEventListener('click', () => calculate('rth'));
 
-    let providedInputsCount = 0;
-    let allPositive = true;
-    let missingInputs = [];
+    function getParsedInputs(excludeKey) {
+        const inputs = {};
+        let isValid = true;
+        let missing = [];
 
-    // Validate the *other* four inputs
-    inputs.forEach(input => {
-        if (input.name !== targetVariable) {
-            if (input.value !== null && !isNaN(input.value)) {
-                providedInputsCount++;
-                if (input.value <= 0) {
-                    allPositive = false;
+        for (const key in elements) {
+            if (key !== 'error' && key !== excludeKey) {
+                const value = parseFloat(elements[key].value);
+                if (isNaN(value) || value <= 0) {
+                    isValid = false;
+                    missing.push(key.toUpperCase());
                 }
-            } else {
-                missingInputs.push(input.name);
+                inputs[key] = value;
             }
         }
-    });
-
-    // Check if exactly 4 other inputs are provided and positive
-    if (providedInputsCount !== 4) {
-        errorElement.textContent = `Error: Please provide values for ${missingInputs.join(', ')}.`;
-        targetInput.el.value = ''; // Clear target field
-        return;
+        return { values: inputs, isValid, missing };
     }
 
-    if (!allPositive) {
-        errorElement.textContent = 'Error: All input values must be positive.';
-        targetInput.el.value = ''; // Clear target field
-        return;
-    }
+    function calculate(targetKey) {
+        elements.error.textContent = ''; // Clear previous errors
 
-    const getValue = (name) => inputs.find(i => i.name === name).value;
+        const { values, isValid, missing } = getParsedInputs(targetKey);
+        
+        if (!isValid) {
+            elements.error.textContent = `Error: Please provide positive values for ${missing.join(', ')}.`;
+            elements[targetKey].value = ''; // Clear target field
+            return;
+        }
 
-    try {
+        const { x, y, z, k, rth } = values;
         let result;
-        // Get the values needed for calculations (which are the non-target inputs)
-        const x = getValue('X');
-        const y = getValue('Y');
-        const z = getValue('Z');
-        const k = getValue('K');
-        const rth = getValue('Rth');
 
-        // Perform calculation based on the explicitly passed targetVariable
-        switch (targetVariable) {
-            case 'Rth':
-                // Check required inputs for this specific calculation
-                if (x === null || y === null || k === null || z === null) throw new Error("Missing required inputs for Rth calculation.");
-                if (x === 0 || y === 0 || k === 0) throw new Error("X, Y dimensions and Thermal Conductivity cannot be zero.");
-                // Rth = (Z * 1000) / (k * X * Y) 
-                result = (z * 1000) / (k * x * y);
-                break;
-            case 'X':
-                if (y === null || k === null || z === null || rth === null) throw new Error("Missing required inputs for X calculation.");
-                if (y === 0 || rth === 0 || k === 0) throw new Error("Y dimension, Thermal Resistance, and Thermal Conductivity cannot be zero.");
-                // X = (Z * 1000) / (k * Y * Rth)
-                result = (z * 1000) / (k * y * rth);
-                break;
-            case 'Y':
-                if (x === null || k === null || z === null || rth === null) throw new Error("Missing required inputs for Y calculation.");
-                if (x === 0 || rth === 0 || k === 0) throw new Error("X dimension, Thermal Resistance, and Thermal Conductivity cannot be zero.");
-                // Y = (Z * 1000) / (k * X * Rth)
-                result = (z * 1000) / (k * x * rth);
-                break;
-            case 'Z':
-                if (x === null || y === null || k === null || rth === null) throw new Error("Missing required inputs for Z calculation.");
-                // Z = (Rth * k * X * Y) / 1000
-                // No division by zero risk if inputs are validated as positive
-                result = (rth * k * x * y) / 1000;
-                break;
-            case 'K':
-                if (x === null || y === null || z === null || rth === null) throw new Error("Missing required inputs for K calculation.");
-                if (z === 0) {
-                    // This case implies Rth should also be 0 if X and Y are non-zero.
-                    // If Z=0 and Rth is non-zero (and X, Y non-zero), it's an impossible physical scenario. 
-                    // If Z=0 and Rth=0, conductivity could be anything (indeterminate). 
-                    throw new Error("Cannot determine conductivity when Z dimension is zero.");
-                } else if (rth === 0 || x === 0 || y === 0) {
-                    // If Rth or X or Y is zero, k would need to be infinite, which isn't practical. 
-                    throw new Error("Thermal Resistance, X, and Y dimensions must be non-zero to calculate Conductivity.");
-                }
-                // k = (Z * 1000) / (Rth * X * Y)
-                result = (z * 1000) / (rth * x * y);
-                break;
-            default:
-                // This case should ideally not be reached due to the check at the start
-                throw new Error("Unknown calculation target.");
+        try {
+            switch (targetKey) {
+                case 'rth':
+                    // Rth = (Z * 1000) / (k * X * Y) 
+                    if (k === 0 || x === 0 || y === 0) throw new Error("Conductivity and dimensions cannot be zero.");
+                    result = (z * 1000) / (k * x * y);
+                    break;
+                case 'x':
+                    // X = (Z * 1000) / (k * Y * Rth)
+                    if (k === 0 || y === 0 || rth === 0) throw new Error("Conductivity, Y dimension, and Resistance cannot be zero.");
+                    result = (z * 1000) / (k * y * rth);
+                    break;
+                case 'y':
+                    // Y = (Z * 1000) / (k * X * Rth)
+                    if (k === 0 || x === 0 || rth === 0) throw new Error("Conductivity, X dimension, and Resistance cannot be zero.");
+                    result = (z * 1000) / (k * x * rth);
+                    break;
+                case 'z':
+                    // Z = (Rth * k * X * Y) / 1000
+                    result = (rth * k * x * y) / 1000;
+                    break;
+                case 'k':
+                    // k = (Z * 1000) / (Rth * X * Y)
+                    if (rth === 0 || x === 0 || y === 0) throw new Error("Resistance and dimensions must be non-zero.");
+                    result = (z * 1000) / (rth * x * y);
+                    break;
+                default:
+                    throw new Error("Unknown calculation target.");
+            }
+
+            if (!isNaN(result) && isFinite(result) && result >= 0) {
+                elements[targetKey].value = result.toPrecision(4);
+            } else {
+                throw new Error("Calculation resulted in an invalid number.");
+            }
+        } catch (error) {
+            elements.error.textContent = `Error: ${error.message}`;
+            elements[targetKey].value = '';
         }
-
-        if (!isNaN(result) && isFinite(result) && result >=0) {
-            // Format to a reasonable number of significant digits or decimal places
-            targetInput.el.value = result.toPrecision(4); 
-            errorElement.textContent = ''; // Clear error on success
-        } else {
-            // Handle cases like division by zero resulting in Infinity or calculation resulting in NaN
-            targetInput.el.value = ''; // Clear the field
-            throw new Error("Calculation resulted in an invalid or non-physical number (e.g., division by zero, negative value).");
-        }
-
-    } catch (error) {
-        errorElement.textContent = `Error: ${error.message}`;
-        targetInput.el.value = ''; // Clear target field on error
     }
-}
-
-// Optional: Event listeners are less critical now with dedicated buttons, but could be added for live updates. 
+})(); 

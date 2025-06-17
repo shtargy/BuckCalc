@@ -433,54 +433,6 @@ body {
     margin-bottom: 15px;
 }
 
-/* Align Series/Parallel action buttons */
-.equiv-actions {
-    display: flex;
-    /* Align with the labels of input groups (adjust margin-left as needed based on label width) */
-    margin-left: 190px; 
-    margin-bottom: 15px;
-}
-
-.equiv-actions .calc-button {
-    margin-right: 10px; /* Space between buttons */
-}
-
-/* Style the small remove button */
-.component-input-row .remove-button {
-    background-color: var(--bg-tertiary);
-    border: 1px solid var(--border-primary);
-    color: var(--text-secondary);
-    padding: 2px 6px;
-    font-size: 12px;
-    line-height: 1;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-left: 10px; /* Space before remove button */
-    transition: background-color 0.2s, color 0.2s;
-}
-
-.component-input-row .remove-button:hover {
-    background-color: var(--border-primary);
-    color: var(--error-poor);
-}
-
-/* Ensure labels in component rows have enough space */
-.component-input-row label {
-     min-width: 40px; /* Smaller min-width for C1:, R1: etc. */
-     text-align: right;
-     margin-right: 10px;
-}
-
-/* Override general label width for component rows */
-.input-group-sci.component-input-row label {
-    min-width: 40px; 
-}
-
-/* Adjust the container holding dynamic rows if needed */
-#equiv-inputs {
-    margin-left: 150px; /* Indent the component rows slightly */
-}
-
 /* Align the calculate button container (used in Coupled Inductor calc) */
 .calc-button-container {
     display: flex;
@@ -488,4 +440,38 @@ body {
     margin-left: 190px; 
     margin-top: 15px;  /* Add some space above the button */
     margin-bottom: 15px; /* Space below the button */
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    font-size: 0.9em;
+}
+
+.results-table th, .results-table td {
+    border: 1px solid var(--border-primary);
+    padding: 8px 10px;
+    text-align: right;
+    color: var(--text-primary);
+}
+
+.results-table th {
+    background-color: var(--bg-secondary);
+    font-weight: 600;
+    text-align: center;
+}
+
+.results-table tr:nth-child(even) {
+    background-color: var(--bg-tertiary);
+}
+
+.results-table tr:hover {
+    background-color: var(--border-secondary);
+}
+
+.highlight-closest {
+    background-color: var(--accent-primary) !important;
+    color: var(--text-on-accent) !important;
+    font-weight: bold;
 } 

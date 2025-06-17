@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * PCB Calculator (v1.0.0)
  *
@@ -15,110 +17,72 @@
  * - All functions use common utilities from utils.js for consistency
  */
 
-// PCB Calculator Functions
-
 // Resistivity constants
 const COPPER_RESISTIVITY_20C = 1.68e-8;  // Resistivity of copper at 20°C in ohm-meters
 const COPPER_TEMP_COEFFICIENT = 0.00393; // Temperature coefficient of resistivity for copper (per °C)
 const REFERENCE_TEMP = 20;               // Reference temperature in °C
 
 /**
- * Unit conversion constants and helper functions
- */
-const MM_TO_M = 1/1000;               // Convert mm to meters
-const MICRON_TO_M = 1/1000000;        // Convert µm to meters
-const OHM_TO_MILLIOHM = 1000;         // Convert Ω to mΩ
-const MILLIOHM_TO_OHM = 1/1000;       // Convert mΩ to Ω
-
-/**
- * Helper function to manage calculation flow for PCB calculator
- * @param {Array<string>} inputIds - Array of input IDs
- * @param {string} outputId - Output ID
- * @param {Function} calculationFn - Calculation function
- * @param {number} outputDecimals - Number of decimals for output
+ * Helper function to manage calculation flow for PCB calculator.
+ * It reads, validates, and then passes values to a specified calculation function.
+ * @param {Array<string>} inputIds - Array of input IDs required for the calculation.
+ * @param {string} outputId - The ID of the element to display the result in.
+ * @param {Function} calculationFn - The function that performs the core calculation.
+ * @param {number} outputDecimals - Number of decimal places for the output.
  * @returns {void}
  */
 function calculateAndUpdatePCB(inputIds, outputId, calculationFn, outputDecimals = 2) {
-    // --- Read values ONCE ---
     const valueMap = new Map();
-    inputIds.forEach(id => valueMap.set(id, utils.getValue(id)));
+    const valueNames = [];
 
-    const inputNames = inputIds.map(id => id.replace('pcb-', '').replace(/-/g, ' ').toUpperCase());
-
-    // Fetch temperature, providing default
-    const temperature = valueMap.get('pcb-trace-temperature') ?? valueMap.get('pcb-via-temperature') ?? REFERENCE_TEMP;
-
-    // --- Perform Validations ---
-    let isValid = true;
-    const errors = [];
-
-    // 1. Check for non-null/NaN on non-temperature fields
-    const nonTempIds = inputIds.filter(id => !id.includes('-temperature'));
-    const nonTempValues = nonTempIds.map(id => valueMap.get(id));
-    const nonTempNames = nonTempIds.map(id => id.replace('pcb-', '').replace(/-/g, ' ').toUpperCase());
-    
-    if (!utils.validateInputs(nonTempValues, nonTempNames)) {
-        // utils.validateInputs already shows an alert, so just mark as invalid
-        isValid = false; 
-    }
-
-    // 2. Check for positivity on non-temperature fields (only if previous check passed)
-    if (isValid) {
-        for (let i = 0; i < nonTempValues.length; i++) {
-            if (!utils.validatePositive(nonTempValues[i], nonTempNames[i])) {
-                // utils.validatePositive shows an alert
-                isValid = false;
-                break;
-            }
+    for (const id of inputIds) {
+        valueMap.set(id, utils.getValue(id));
+        if (!id.includes('-temperature')) {
+            // Create a user-friendly name for validation messages
+            valueNames.push(id.replace('pcb-', '').replace(/-/g, ' '));
         }
     }
 
-    // 3. Check temperature range (only if previous checks passed)
-    if (isValid && !validateTemperature(temperature)) {
-        // validateTemperature shows an alert
-        isValid = false;
-    }
+    const temperatureId = inputIds.find(id => id.includes('-temperature'));
+    const temperature = temperatureId ? valueMap.get(temperatureId) : REFERENCE_TEMP;
 
-    // --- Exit or Calculate ---
-    if (!isValid) {
-        return null; // Exit if any validation failed
-    }
+    const nonTempValues = inputIds.filter(id => !id.includes('-temperature')).map(id => valueMap.get(id));
 
-    // Prepare arguments for calculationFn (using the initially read values)
-    const calculationArgs = inputIds.map(id => valueMap.get(id));
-
-    // Execute calculation
-    const result = calculationFn(...calculationArgs, temperature); // Pass temp as extra arg if needed (it might already be in calculationArgs)
-
-    // Set output if result is valid
-    if (result !== null && result !== undefined && !isNaN(result)) {
-        utils.setValue(outputId, result, outputDecimals);
-        return result;
+    if (!utils.validateInputs(nonTempValues, valueNames, false)) {
+        return; // Validation failed, message shown by util
     }
     
-    return null;
+    if (temperatureId && !validateTemperature(temperature)) {
+        return; // Validation failed, message shown by util
+    }
+
+    const calculationArgs = inputIds.map(id => valueMap.get(id));
+    const result = calculationFn(...calculationArgs);
+
+    if (result !== null && isFinite(result)) {
+        utils.setValue(outputId, result, outputDecimals);
+    } else {
+        utils.setValue(outputId, '', outputDecimals); // Clear output on invalid calc
+    }
 }
 
 /**
  * Calculates copper resistivity at a given temperature
- * 
  * @param {number} temperature - Temperature in °C
  * @returns {number} - Resistivity in ohm-meters
  */
 function calculateCopperResistivity(temperature) {
-    // Using the formula: ρ(T) = ρ₀[1 + α(T - T₀)]
     return COPPER_RESISTIVITY_20C * (1 + COPPER_TEMP_COEFFICIENT * (temperature - REFERENCE_TEMP));
 }
 
 /**
  * Validates if temperature is within a reasonable range
- * 
  * @param {number} temperature - Temperature in °C
  * @returns {boolean} - True if valid, false otherwise
  */
 function validateTemperature(temperature) {
-    const MIN_TEMP = -50;  // Minimum reasonable temperature in °C
-    const MAX_TEMP = 200;  // Maximum reasonable temperature in °C
+    const MIN_TEMP = -50;
+    const MAX_TEMP = 200;
     
     if (temperature < MIN_TEMP || temperature > MAX_TEMP) {
         alert(`Temperature must be between ${MIN_TEMP}°C and ${MAX_TEMP}°C`);
@@ -128,277 +92,235 @@ function validateTemperature(temperature) {
 }
 
 /**
- * Converts millimeters to meters
- * @param {number} mm - Value in millimeters
- * @returns {number} - Value in meters
- */
-function mmToMeters(mm) {
-    return mm * MM_TO_M;
-}
-
-/**
- * Converts microns to meters
- * @param {number} microns - Value in microns
- * @returns {number} - Value in meters
- */
-function micronsToMeters(microns) {
-    return microns * MICRON_TO_M;
-}
-
-/**
- * Converts ohms to milliohms
- * @param {number} ohms - Value in ohms
- * @returns {number} - Value in milliohms
- */
-function ohmsToMilliohms(ohms) {
-    return ohms * OHM_TO_MILLIOHM;
-}
-
-/**
- * Converts milliohms to ohms
- * @param {number} milliohms - Value in milliohms
- * @returns {number} - Value in ohms
- */
-function milliohmsToOhms(milliohms) {
-    return milliohms * MILLIOHM_TO_OHM;
-}
-
-/**
  * Calculates trace resistance based on dimensions
- * 
  * @returns {void}
  */
 function calculateTraceResistance() {
+    const MM_TO_M = 0.001;
+    const MICRON_TO_M = 1e-6;
+    const OHM_TO_MILLIOHM = 1000;
+
     calculateAndUpdatePCB(
         ['pcb-trace-length', 'pcb-trace-width', 'pcb-trace-thickness', 'pcb-trace-temperature'],
         'pcb-trace-resistance',
         (length, width, thickness, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
-            const lengthM = mmToMeters(length);
-            const widthM = mmToMeters(width);
-            const thicknessM = micronsToMeters(thickness);
+            const lengthM = length * MM_TO_M;
+            const widthM = width * MM_TO_M;
+            const thicknessM = thickness * MICRON_TO_M;
             const area = widthM * thicknessM;
-            if (Math.abs(area) < 1e-18) return null; // Avoid division by zero
+            if (Math.abs(area) < 1e-18) return null;
             const resistance = resistivity * lengthM / area;
-            return ohmsToMilliohms(resistance);
+            return resistance * OHM_TO_MILLIOHM;
         },
-        3 // Output decimals
+        3
     );
 }
 
 /**
  * Calculates trace length based on resistance and other dimensions
- * 
  * @returns {void}
  */
 function calculateTraceLength() {
+    const MM_TO_M = 0.001;
+    const MICRON_TO_M = 1e-6;
+    const MILLIOHM_TO_OHM = 0.001;
+
     calculateAndUpdatePCB(
         ['pcb-trace-resistance', 'pcb-trace-width', 'pcb-trace-thickness', 'pcb-trace-temperature'],
         'pcb-trace-length',
         (resistance, width, thickness, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
-            const resistanceOhm = milliohmsToOhms(resistance);
-            const widthM = mmToMeters(width);
-            const thicknessM = micronsToMeters(thickness);
+            const resistanceOhm = resistance * MILLIOHM_TO_OHM;
+            const widthM = width * MM_TO_M;
+            const thicknessM = thickness * MICRON_TO_M;
             const area = widthM * thicknessM;
-            if (Math.abs(resistivity) < 1e-18) return null; // Avoid division by zero
+            if (Math.abs(resistivity) < 1e-18) return null;
             const lengthM = resistanceOhm * area / resistivity;
             return lengthM / MM_TO_M;
         },
-        2 // Output decimals
+        2
     );
 }
 
 /**
  * Calculates trace width based on resistance and other dimensions
- * 
  * @returns {void}
  */
 function calculateTraceWidth() {
+    const MM_TO_M = 0.001;
+    const MICRON_TO_M = 1e-6;
+    const MILLIOHM_TO_OHM = 0.001;
+
     calculateAndUpdatePCB(
         ['pcb-trace-resistance', 'pcb-trace-length', 'pcb-trace-thickness', 'pcb-trace-temperature'],
         'pcb-trace-width',
         (resistance, length, thickness, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
-            const resistanceOhm = milliohmsToOhms(resistance);
-            const lengthM = mmToMeters(length);
-            const thicknessM = micronsToMeters(thickness);
+            const resistanceOhm = resistance * MILLIOHM_TO_OHM;
+            const lengthM = length * MM_TO_M;
+            const thicknessM = thickness * MICRON_TO_M;
             const denominator = resistanceOhm * thicknessM;
-            if (Math.abs(denominator) < 1e-18) return null; // Avoid division by zero
+            if (Math.abs(denominator) < 1e-18) return null;
             const widthM = resistivity * lengthM / denominator;
             return widthM / MM_TO_M;
         },
-        3 // Output decimals
+        3
     );
 }
 
 /**
  * Calculates trace thickness based on resistance and other dimensions
- * 
  * @returns {void}
  */
 function calculateTraceThickness() {
+    const MM_TO_M = 0.001;
+    const MICRON_TO_M = 1e-6;
+    const MILLIOHM_TO_OHM = 0.001;
+
     calculateAndUpdatePCB(
         ['pcb-trace-resistance', 'pcb-trace-length', 'pcb-trace-width', 'pcb-trace-temperature'],
         'pcb-trace-thickness',
         (resistance, length, width, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
-            const resistanceOhm = milliohmsToOhms(resistance);
-            const lengthM = mmToMeters(length);
-            const widthM = mmToMeters(width);
+            const resistanceOhm = resistance * MILLIOHM_TO_OHM;
+            const lengthM = length * MM_TO_M;
+            const widthM = width * MM_TO_M;
             const denominator = resistanceOhm * widthM;
-            if (Math.abs(denominator) < 1e-18) return null; // Avoid division by zero
+            if (Math.abs(denominator) < 1e-18) return null;
             const thicknessM = resistivity * lengthM / denominator;
             return thicknessM / MICRON_TO_M;
         },
-        1 // Output decimals
+        2
     );
 }
 
+
+// --- Via Resistance Calculations ---
+
 /**
  * Calculates via resistance based on dimensions
- * 
  * @returns {void}
  */
 function calculateViaResistance() {
+    const MM_TO_M = 0.001;
+    const OHM_TO_MILLIOHM = 1000;
+
     calculateAndUpdatePCB(
         ['pcb-via-diameter', 'pcb-via-wall', 'pcb-via-height', 'pcb-via-temperature'],
         'pcb-via-resistance',
-        (outerDiameter, wallThickness, height, temperature) => {
-            if (wallThickness * 2 >= outerDiameter) {
-                alert('Wall thickness cannot be more than half the outer diameter.');
-                return null;
-            }
+        (outerDiameter, wall, height, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
-            const heightM = mmToMeters(height);
-            const outerRadiusM = mmToMeters(outerDiameter / 2);
-            const innerRadiusM = mmToMeters((outerDiameter / 2) - wallThickness);
-            const area = Math.PI * (Math.pow(outerRadiusM, 2) - Math.pow(innerRadiusM, 2));
-             if (Math.abs(area) < 1e-18) return null; // Avoid division by zero
+            const heightM = height * MM_TO_M;
+
+            const outerR = (outerDiameter / 2) * MM_TO_M;
+            const innerR = ((outerDiameter / 2) - wall) * MM_TO_M;
+            
+            if (innerR < 0) {
+                 alert("Via wall thickness cannot be greater than half the outer diameter.");
+                 return null;
+            }
+
+            const area = Math.PI * (Math.pow(outerR, 2) - Math.pow(innerR, 2));
+            if (Math.abs(area) < 1e-18) return null;
             const resistance = resistivity * heightM / area;
-            return ohmsToMilliohms(resistance);
+            return resistance * OHM_TO_MILLIOHM;
         },
-        3 // Output decimals
+        3
     );
 }
 
 /**
  * Calculates via outer diameter based on resistance and other dimensions
- * 
  * @returns {void}
  */
 function calculateViaOuterDiameter() {
-     calculateAndUpdatePCB(
+    const MM_TO_M = 0.001;
+    const MILLIOHM_TO_OHM = 0.001;
+
+    calculateAndUpdatePCB(
         ['pcb-via-resistance', 'pcb-via-wall', 'pcb-via-height', 'pcb-via-temperature'],
         'pcb-via-diameter',
-        (resistance, wallThickness, height, temperature) => {
+        (resistance, wall, height, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
-            const resistanceOhm = milliohmsToOhms(resistance);
-            const heightM = mmToMeters(height);
-            const wallThicknessM = mmToMeters(wallThickness);
-            if (Math.abs(resistivity * heightM) < 1e-18) return null; // Avoid potential division by zero later
+            const resistanceOhm = resistance * MILLIOHM_TO_OHM;
+            const heightM = height * MM_TO_M;
+            const wallM = wall * MM_TO_M;
             
-            // R = rho * H / (pi * (r_outer^2 - r_inner^2))
-            // R = rho * H / (pi * (r_outer^2 - (r_outer - wall)^2))
-            // R = rho * H / (pi * (r_outer^2 - (r_outer^2 - 2*r_outer*wall + wall^2)))
-            // R = rho * H / (pi * (2*r_outer*wall - wall^2))
-            // pi * R * (2*r_outer*wall - wall^2) = rho * H
-            // 2*r_outer*wall - wall^2 = (rho * H) / (pi * R)
-            // 2*r_outer*wall = (rho * H) / (pi * R) + wall^2
-            // r_outer = [(rho * H) / (pi * R) + wall^2] / (2*wall)
-            const term1 = (resistivity * heightM) / (Math.PI * resistanceOhm);
-            const numerator = term1 + Math.pow(wallThicknessM, 2);
-            const denominator = 2 * wallThicknessM;
-            if (Math.abs(denominator) < 1e-18) return null; // Avoid division by zero
-            const outerRadiusM = numerator / denominator;
-            const outerDiameterMm = (outerRadiusM / MM_TO_M) * 2;
-            return outerDiameterMm;
+            const term = (resistivity * heightM) / (Math.PI * resistanceOhm) + Math.pow(wallM, 2);
+            if (term < 0) return null;
+
+            const outerR = Math.sqrt(term) + wallM;
+            return (outerR / MM_TO_M) * 2;
         },
-        3 // Output decimals
+        3
     );
 }
 
+
 /**
  * Calculates via wall thickness based on resistance and other dimensions
- * 
  * @returns {void}
  */
 function calculateViaWallThickness() {
+    const MM_TO_M = 0.001;
+    const MILLIOHM_TO_OHM = 0.001;
+
     calculateAndUpdatePCB(
         ['pcb-via-resistance', 'pcb-via-diameter', 'pcb-via-height', 'pcb-via-temperature'],
         'pcb-via-wall',
         (resistance, outerDiameter, height, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
-            const resistanceOhm = milliohmsToOhms(resistance);
-            const heightM = mmToMeters(height);
-            const outerRadiusM = mmToMeters(outerDiameter / 2);
-             if (Math.abs(resistivity * heightM) < 1e-18 || Math.abs(Math.PI * resistanceOhm) < 1e-18) return null; 
-             
-            // R = rho * H / (pi * (r_outer^2 - r_inner^2))
-            // pi * R * (r_outer^2 - r_inner^2) = rho * H
-            // r_outer^2 - r_inner^2 = (rho * H) / (pi * R)
-            // r_inner^2 = r_outer^2 - (rho * H) / (pi * R)
-            const term1 = (resistivity * heightM) / (Math.PI * resistanceOhm);
-            const innerRadiusSquared = Math.pow(outerRadiusM, 2) - term1;
-            if (innerRadiusSquared < 0) return null; // Cannot have negative inner radius squared
-            const innerRadiusM = Math.sqrt(innerRadiusSquared);
-            const wallThicknessM = outerRadiusM - innerRadiusM;
-            const wallThicknessMm = wallThicknessM / MM_TO_M;
-            return wallThicknessMm;
+            const resistanceOhm = resistance * MILLIOHM_TO_OHM;
+            const heightM = height * MM_TO_M;
+            const outerR = (outerDiameter / 2) * MM_TO_M;
+
+            const term = Math.pow(outerR, 2) - (resistivity * heightM) / (Math.PI * resistanceOhm);
+            if (term < 0) return null;
+
+            const innerR = Math.sqrt(term);
+            const wallM = outerR - innerR;
+            return wallM / MM_TO_M;
         },
-        3 // Output decimals
+        3
     );
 }
 
 /**
  * Calculates via height based on resistance and other dimensions
- * 
  * @returns {void}
  */
 function calculateViaHeight() {
+    const MM_TO_M = 0.001;
+    const MILLIOHM_TO_OHM = 0.001;
+    
     calculateAndUpdatePCB(
         ['pcb-via-resistance', 'pcb-via-diameter', 'pcb-via-wall', 'pcb-via-temperature'],
         'pcb-via-height',
-        (resistance, outerDiameter, wallThickness, temperature) => {
-             if (wallThickness * 2 >= outerDiameter) {
-                 // Already handled by alert in calculateViaResistance, but good to prevent calculation
-                return null;
-            }
+        (resistance, outerDiameter, wall, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
-            const resistanceOhm = milliohmsToOhms(resistance);
-            const outerRadiusM = mmToMeters(outerDiameter / 2);
-            const innerRadiusM = mmToMeters((outerDiameter / 2) - wallThickness);
-            const area = Math.PI * (Math.pow(outerRadiusM, 2) - Math.pow(innerRadiusM, 2));
-            if (Math.abs(resistivity) < 1e-18) return null; // Avoid division by zero
-            // R = rho * H / A => H = R * A / rho
-            const heightM = resistanceOhm * area / resistivity;
-            const heightMm = heightM / MM_TO_M;
-            return heightMm;
+            const resistanceOhm = resistance * MILLIOHM_TO_OHM;
+            
+            const outerR = (outerDiameter / 2) * MM_TO_M;
+            const innerR = ((outerDiameter / 2) - wall) * MM_TO_M;
+
+            if (innerR < 0) {
+                 alert("Via wall thickness cannot be greater than half the outer diameter.");
+                 return null;
+            }
+
+            const area = Math.PI * (Math.pow(outerR, 2) - Math.pow(innerR, 2));
+            if (Math.abs(resistivity) < 1e-18) return null;
+
+            const heightM = (resistanceOhm * area) / resistivity;
+            return heightM / MM_TO_M;
         },
-        2 // Output decimals
+        2
     );
 }
 
-// Register calculator with registry
-if (window.calculatorRegistry) {
-    window.calculatorRegistry.register(
-        'pcb',                // ID
-        'PCB',                // Name
-        'PCB trace and via resistance calculator', // Description
-        {
-            calculateTraceResistance,
-            calculateTraceLength,
-            calculateTraceWidth,
-            calculateTraceThickness,
-            calculateViaResistance,
-            calculateViaOuterDiameter,
-            calculateViaWallThickness,
-            calculateViaHeight
-        }
-    );
-}
-
-// Make functions globally accessible
+// --- Global Export ---
+// Expose functions to the global window object so they can be called from HTML
 window.calculateTraceResistance = calculateTraceResistance;
 window.calculateTraceLength = calculateTraceLength;
 window.calculateTraceWidth = calculateTraceWidth;
