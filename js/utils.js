@@ -111,10 +111,22 @@ function getValue(id) {
 function setValue(id, value, decimals = 2) {
     const element = document.getElementById(id);
     if (element) {
+        // Handle empty, null, or invalid values
+        if (value === null || value === undefined || value === '' || isNaN(value)) {
+            element.value = '';
+            delete element.dataset.preciseValue;
+            return;
+        }
+        
         // Store the full precision value as a data attribute
         element.dataset.preciseValue = value;
         // Format the displayed value with specified decimals
-        element.value = parseFloat(value).toFixed(decimals);
+        const numValue = parseFloat(value);
+        if (!isNaN(numValue)) {
+            element.value = numValue.toFixed(decimals);
+        } else {
+            element.value = '';
+        }
     }
 }
 

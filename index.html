@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DC-DC Converter Calculators</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -764,83 +765,69 @@
                 <h2>Coupled Inductor Ripple</h2>
                 <p>Calculates the ripple current for discrete (`dIL_DL`) and coupled (`dIL_CL`) inductors in a multiphase buck converter topology, based on input/output voltages, inductance values, frequency, and phase count.</p>
                 
-                <div class="input-group-sci">
-                    <label for="ci-vin-val">Input Voltage (V<sub>IN</sub>):</label>
-                    <input type="number" step="any" id="ci-vin-val" placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-vin-exp" placeholder="Exp">
+                <div class="input-group">
+                    <label for="ci-vin">Input Voltage (V<sub>IN</sub>):</label>
+                    <input type="number" step="any" id="ci-vin" placeholder="Value">
                     <span class="unit">V</span>
                 </div>
-                <div class="input-group-sci">
-                    <label for="ci-vout-val">Output Voltage (V<sub>OUT</sub>):</label>
-                    <input type="number" step="any" id="ci-vout-val" placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-vout-exp" placeholder="Exp">
+                <div class="input-group">
+                    <label for="ci-vout">Output Voltage (V<sub>OUT</sub>):</label>
+                    <input type="number" step="any" id="ci-vout" placeholder="Value">
                     <span class="unit">V</span>
                 </div>
-                <div class="input-group-sci">
-                    <label for="ci-lm-val">Mutual Inductance (L<sub>m</sub>):</label>
-                    <input type="number" step="any" id="ci-lm-val" placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-lm-exp" placeholder="Exp">
-                    <span class="unit">H</span>
+                <div class="input-group">
+                    <label for="ci-lm">Mutual Inductance (L<sub>m</sub>):</label>
+                    <input type="number" step="any" id="ci-lm" placeholder="Value">
+                    <select id="ci-lm-unit" class="unit-select">
+                        <option value="nH">nH</option>
+                        <option value="uH" selected>µH</option>
+                    </select>
                 </div>
-                <div class="input-group-sci">
-                    <label for="ci-l-val">Self Inductance (L):</label>
-                    <input type="number" step="any" id="ci-l-val" placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-l-exp" placeholder="Exp">
-                    <span class="unit">H</span>
+                <div class="input-group">
+                    <label for="ci-l">Self Inductance (L):</label>
+                    <input type="number" step="any" id="ci-l" placeholder="Value">
+                    <select id="ci-l-unit" class="unit-select">
+                        <option value="nH">nH</option>
+                        <option value="uH" selected>µH</option>
+                    </select>
                 </div>
-                 <div class="input-group-sci">
-                    <label for="ci-fs-val">Switching Frequency (F<sub>S</sub>):</label>
-                    <input type="number" step="any" id="ci-fs-val" placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-fs-exp" placeholder="Exp">
-                    <span class="unit">Hz</span>
+                <div class="input-group">
+                    <label for="ci-fs">Switching Frequency (F<sub>S</sub>):</label>
+                    <input type="number" step="any" id="ci-fs" placeholder="Value">
+                    <select id="ci-fs-unit" class="unit-select">
+                        <option value="kHz">kHz</option>
+                        <option value="MHz" selected>MHz</option>
+                    </select>
                 </div>
-                 <div class="input-group-sci">
-                    <label for="ci-nph-val">Number of Phases (N<sub>ph</sub>):</label>
-                    <input type="number" step="1" id="ci-nph-val" placeholder="Value" min="2">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" value="0" id="ci-nph-exp" placeholder="Exp" readonly> <!-- Exponent is always 0 for Nph -->
+                <div class="input-group">
+                    <label for="ci-nph">Number of Phases (N<sub>ph</sub>):</label>
+                    <input type="number" step="1" id="ci-nph" placeholder="Value" min="2">
                     <span class="unit"></span>
                 </div>
 
-                <div class="calc-button-container">
-                     <button class="calc-button">Calculate Ripple Currents</button>
-                </div>
-
                 <!-- Intermediate Results -->
-                <div class="result-group-sci">
-                    <label for="ci-d-val">Duty Cycle (D):</label>
-                    <input type="number" step="any" id="ci-d-val" readonly placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-d-exp" readonly placeholder="Exp">
-                    <span class="unit"></span> <!-- Unitless -->
-                </div>
-                 <div class="result-group-sci">
-                    <label for="ci-fom-val">Figure of Merit (FOM):</label>
-                    <input type="number" step="any" id="ci-fom-val" readonly placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-fom-exp" readonly placeholder="Exp">
-                    <span class="unit"></span> <!-- Unitless -->
-                </div>
-
-                <!-- Final Results -->
-                <div class="result-group-sci">
-                    <label for="ci-dildl-val">Discrete Ripple (dIL<sub>DL</sub>):</label>
-                    <input type="number" step="any" id="ci-dildl-val" readonly placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-dildl-exp" readonly placeholder="Exp">
-                    <span class="unit">A</span>
-                </div>
-                <div class="result-group-sci">
-                    <label for="ci-dilcl-val">Coupled Ripple (dIL<sub>CL</sub>):</label>
-                    <input type="number" step="any" id="ci-dilcl-val" readonly placeholder="Value">
-                    <span class="exponent-label"> × 10^</span>
-                    <input type="number" step="1" id="ci-dilcl-exp" readonly placeholder="Exp">
-                    <span class="unit">A</span>
+                <div class="calculator-section">
+                    <h3>Results</h3>
+                    <div class="input-group">
+                        <label for="ci-d">Duty Cycle (D):</label>
+                        <input type="number" step="any" id="ci-d" readonly placeholder="—">
+                        <span class="unit">%</span>
+                    </div>
+                    <div class="input-group">
+                        <label for="ci-fom">Figure of Merit (FOM):</label>
+                        <input type="number" step="any" id="ci-fom" readonly placeholder="—">
+                        <span class="unit"></span>
+                    </div>
+                    <div class="input-group">
+                        <label for="ci-dildl">Discrete Ripple (dIL<sub>DL</sub>):</label>
+                        <input type="number" step="any" id="ci-dildl" readonly placeholder="—">
+                        <span class="unit">A</span>
+                    </div>
+                    <div class="input-group">
+                        <label for="ci-dilcl">Coupled Ripple (dIL<sub>CL</sub>):</label>
+                        <input type="number" step="any" id="ci-dilcl" readonly placeholder="—">
+                        <span class="unit">A</span>
+                    </div>
                 </div>
 
                 <div id="ci-error" class="error-message"></div>

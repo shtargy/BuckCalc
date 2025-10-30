@@ -1,25 +1,34 @@
 'use strict';
 
+/**
+ * Wafer Die Cost Calculator
+ * 
+ * Calculates wafer die cost metrics including gross dies per wafer,
+ * yielded dies, cost per die, and power FET cost metrics.
+ */
+
 (function() {
     
-    // --- DOM Element References ---
-    const elements = {
-        size: document.getElementById('wafer-size'),
-        dieX: document.getElementById('wafer-die-x'),
-        dieY: document.getElementById('wafer-die-y'),
-        sawStreet: document.getElementById('wafer-saw-street'),
-        edgeKeepout: document.getElementById('wafer-edge-keepout'),
-        grossDies: document.getElementById('wafer-gross-dies'),
-        yield: document.getElementById('wafer-yield'),
-        yieldedDies: document.getElementById('wafer-yielded-dies'),
-        cost: document.getElementById('wafer-cost'),
-        costPerDie: document.getElementById('wafer-cost-per-die'),
-        rds: document.getElementById('wafer-rds'),
-        dieArea: document.getElementById('wafer-die-area'),
-        dieAreaOutput: document.getElementById('wafer-die-area-output'),
-        centsPerMm: document.getElementById('wafer-cents-per-mm'),
-        powerFetCents: document.getElementById('wafer-power-fet-cents')
-    };
+    // --- Helper Functions ---
+    
+    function getElement(id) {
+        return document.getElementById(id);
+    }
+
+    function getNumericValue(element, defaultValue = NaN) {
+        if (!element) return defaultValue;
+        const value = parseFloat(element.value);
+        return isNaN(value) ? defaultValue : value;
+    }
+
+    function setNumericValue(element, value, precision = -1) {
+        if (!element) return;
+        if (isNaN(value) || value === null) {
+            element.value = '';
+            return;
+        }
+        element.value = precision >= 0 ? value.toFixed(precision) : value;
+    }
 
     // --- Core Calculation Functions ---
 
@@ -40,92 +49,89 @@
         return Math.max(0, Math.floor(gdpw));
     }
 
-    function getNumericValue(element, defaultValue = NaN) {
-        if (!element) return defaultValue;
-        const value = parseFloat(element.value);
-        return isNaN(value) ? defaultValue : value;
-    }
-
-    function setNumericValue(element, value, precision = -1) {
-        if (!element) return;
-        if (isNaN(value) || value === null) {
-            element.value = '';
-            return;
-        }
-        element.value = precision >= 0 ? value.toFixed(precision) : value;
-    }
-
     // --- UI Update Functions ---
 
     function calculateAllPerformanceMetrics() {
-        const dieAreaInput = getNumericValue(elements.dieArea, 0);
-        const dieX = getNumericValue(elements.dieX, 0);
-        const dieY = getNumericValue(elements.dieY, 0);
+        // Get elements dynamically to avoid null reference issues
+        const dieAreaEl = getElement('wafer-die-area');
+        const dieXEl = getElement('wafer-die-x');
+        const dieYEl = getElement('wafer-die-y');
+        const sizeEl = getElement('wafer-size');
+        const sawStreetEl = getElement('wafer-saw-street');
+        const edgeKeepoutEl = getElement('wafer-edge-keepout');
+        const yieldEl = getElement('wafer-yield');
+        const costEl = getElement('wafer-cost');
+        const rdsEl = getElement('wafer-rds');
+        
+        const dieAreaInput = getNumericValue(dieAreaEl, 0);
+        const dieX = getNumericValue(dieXEl, 0);
+        const dieY = getNumericValue(dieYEl, 0);
         
         let areaToShow = (dieAreaInput > 0) ? dieAreaInput : (dieX > 0 && dieY > 0 ? dieX * dieY : null);
-        setNumericValue(elements.dieAreaOutput, areaToShow, 4);
+        setNumericValue(getElement('wafer-die-area-output'), areaToShow, 4);
 
-        const waferSize = getNumericValue(elements.size);
-        const sawStreet = getNumericValue(elements.sawStreet);
-        const edgeKeepout = getNumericValue(elements.edgeKeepout);
+        const waferSize = getNumericValue(sizeEl);
+        const sawStreet = getNumericValue(sawStreetEl);
+        const edgeKeepout = getNumericValue(edgeKeepoutEl);
         const grossDies = calculateGdpwEquation(waferSize, edgeKeepout, dieX, dieY, sawStreet);
-        setNumericValue(elements.grossDies, grossDies);
+        setNumericValue(getElement('wafer-gross-dies'), grossDies);
 
-        const yieldVal = getNumericValue(elements.yield, 0);
+        const yieldVal = getNumericValue(yieldEl, 0);
         const yieldedDies = (grossDies > 0) ? Math.floor(grossDies * (yieldVal / 100)) : 0;
-        setNumericValue(elements.yieldedDies, yieldedDies);
+        setNumericValue(getElement('wafer-yielded-dies'), yieldedDies);
 
-        const waferCost = getNumericValue(elements.cost);
+        const waferCost = getNumericValue(costEl);
         const costPerDie = (yieldedDies > 0) ? waferCost / yieldedDies : null;
-        setNumericValue(elements.costPerDie, costPerDie, 4);
+        setNumericValue(getElement('wafer-cost-per-die'), costPerDie, 4);
 
-        const dieAreaOutput = getNumericValue(elements.dieAreaOutput);
+        const dieAreaOutput = getNumericValue(getElement('wafer-die-area-output'));
         const centsPerMm = (dieAreaOutput > 0 && costPerDie !== null) ? (costPerDie * 100) / dieAreaOutput : null;
-        setNumericValue(elements.centsPerMm, centsPerMm, 3);
+        setNumericValue(getElement('wafer-cents-per-mm'), centsPerMm, 3);
 
-        const rds = getNumericValue(elements.rds);
+        const rds = getNumericValue(rdsEl);
         const powerFetCents = (centsPerMm !== null) ? rds * centsPerMm : null;
-        setNumericValue(elements.powerFetCents, powerFetCents, 3);
+        setNumericValue(getElement('wafer-power-fet-cents'), powerFetCents, 3);
     }
 
     // --- Event Listener Setup ---
 
     function init() {
-        if (elements.edgeKeepout && !elements.edgeKeepout.value) {
-            elements.edgeKeepout.value = '3';
+        const edgeKeepoutEl = getElement('wafer-edge-keepout');
+        if (edgeKeepoutEl && !edgeKeepoutEl.value) {
+            edgeKeepoutEl.value = '3';
         }
 
         const inputsToListen = [
-            'size', 'dieX', 'dieY', 'sawStreet', 'edgeKeepout', 
-            'yield', 'cost', 'rds', 'dieArea'
+            'wafer-size', 'wafer-die-x', 'wafer-die-y', 'wafer-saw-street', 
+            'wafer-edge-keepout', 'wafer-yield', 'wafer-cost', 'wafer-rds', 'wafer-die-area'
         ];
 
-        inputsToListen.forEach(key => {
-            const el = elements[key];
+        inputsToListen.forEach(id => {
+            const el = getElement(id);
             if (el) {
-                el.addEventListener('input', (event) => {
+                // Select elements fire 'change' events, input elements fire 'input' events
+                const eventType = el.tagName === 'SELECT' ? 'change' : 'input';
+                el.addEventListener(eventType, (event) => {
                     const targetId = event.target.id;
 
-                    if (targetId === elements.dieArea.id) {
-                        const area = getNumericValue(elements.dieArea, 0);
+                    if (targetId === 'wafer-die-area') {
+                        const area = getNumericValue(getElement('wafer-die-area'), 0);
                         if (area > 0) {
                             const side = Math.sqrt(area);
-                            setNumericValue(elements.dieX, side, 4);
-                            setNumericValue(elements.dieY, side, 4);
+                            setNumericValue(getElement('wafer-die-x'), side, 4);
+                            setNumericValue(getElement('wafer-die-y'), side, 4);
                         }
-                    } else if (targetId === elements.dieX.id || targetId === elements.dieY.id) {
-                        setNumericValue(elements.dieArea, null);
+                    } else if (targetId === 'wafer-die-x' || targetId === 'wafer-die-y') {
+                        setNumericValue(getElement('wafer-die-area'), null);
                     }
                     
                     calculateAllPerformanceMetrics();
                 });
             }
         });
-        
-        // Initial calculation on load can be done if desired, but currently disabled
-        // calculateAllPerformanceMetrics(); 
     }
 
+    // Set up listeners when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {

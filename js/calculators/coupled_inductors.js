@@ -1,112 +1,131 @@
 'use strict';
 
+/**
+ * Coupled Inductor Ripple Calculator
+ * 
+ * Calculates the ripple current for discrete (dIL_DL) and coupled (dIL_CL) 
+ * inductors in a multiphase buck converter topology.
+ * 
+ * Features:
+ * - Unit dropdowns for inductance (nH, µH) and frequency (kHz, MHz)
+ * - Auto-calculation on input change
+ * - Formatted outputs: Duty Cycle (%), FOM, Ripples (A)
+ */
+
 (function() {
 
-    // --- HELPER FUNCTIONS (re-scoped from global) ---
-    function formatToEngineering(value) {
-        if (value === 0) return { value: 0, exponent: 0 };
-        if (!isFinite(value) || isNaN(value)) return { value: NaN, exponent: 0 };
-        const log10 = Math.log10(Math.abs(value));
-        let exponent = Math.floor(log10 / 3) * 3;
-        let significand = value / Math.pow(10, exponent);
-        if (significand >= 1000) {
-            significand /= 1000;
-            exponent += 3;
-        } else if (significand < 1 && significand !== 0) {
-            significand *= 1000;
-            exponent -= 3;
+    // --- UNIT CONVERSION HELPERS ---
+    function convertInductanceToHenry(value, unit) {
+        if (isNaN(value) || value <= 0) return NaN;
+        switch(unit) {
+            case 'nH': return value * 1e-9;
+            case 'uH': return value * 1e-6;
+            default: return NaN;
         }
-        return { value: parseFloat(significand.toPrecision(4)), exponent };
     }
 
-    function getValueExpFromSciInput(baseId) {
-        const valInput = document.getElementById(`${baseId}-val`);
-        const expInput = document.getElementById(`${baseId}-exp`);
-        let value = parseFloat(valInput?.value);
-        let exponent = parseInt(expInput?.value);
-        if (isNaN(exponent) || !Number.isInteger(exponent)) exponent = 0;
-        if (valInput && valInput.value.trim() === '') value = NaN;
-        return { value, exponent };
+    function convertFrequencyToHz(value, unit) {
+        if (isNaN(value) || value <= 0) return NaN;
+        switch(unit) {
+            case 'kHz': return value * 1e3;
+            case 'MHz': return value * 1e6;
+            default: return NaN;
+        }
     }
 
-    function getActualValue(valueExp) {
-        if (isNaN(valueExp.value)) return NaN;
-        return valueExp.value * Math.pow(10, valueExp.exponent);
-    }
-
-    function setSciOutput(baseId, formattedValue) {
-        const valInput = document.getElementById(`${baseId}-val`);
-        const expInput = document.getElementById(`${baseId}-exp`);
-        if (valInput) valInput.value = isNaN(formattedValue.value) ? '' : formattedValue.value;
-        if (expInput) expInput.value = isNaN(formattedValue.value) ? '' : formattedValue.exponent;
-    }
-
-    // --- DOM ELEMENT REFERENCES ---
-    const elements = {
-        inputs: {
-            vin: 'ci-vin', vout: 'ci-vout', lm: 'ci-lm',
-            l: 'ci-l', fs: 'ci-fs', nph: 'ci-nph'
-        },
-        outputs: {
-            d: 'ci-d', fom: 'ci-fom',
-            dildl: 'ci-dildl', dilcl: 'ci-dilcl'
-        },
-        error: document.getElementById('ci-error'),
-        button: document.querySelector('#coupled-inductor-calculator .calc-button')
-    };
-
-    // --- CORE LOGIC ---
+    // --- CORE CALCULATION LOGIC ---
     function getAndValidateInputs() {
-        const inputs = {};
-        const values = {};
         const errors = [];
+        const values = {};
 
-        const inputMeta = {
-            vin: 'V_IN', vout: 'V_OUT', lm: 'L_m',
-            l: 'L', fs: 'F_S', nph: 'N_ph'
-        };
+        // Get input values
+        const vin = utils.getValue('ci-vin');
+        const vout = utils.getValue('ci-vout');
+        const lmRaw = utils.getValue('ci-lm');
+        const lRaw = utils.getValue('ci-l');
+        const fsRaw = utils.getValue('ci-fs');
+        const nphRaw = utils.getValue('ci-nph');
 
-        for (const key in elements.inputs) {
-            inputs[key] = getValueExpFromSciInput(elements.inputs[key]);
-            const name = inputMeta[key];
-            if (isNaN(inputs[key].value)) {
-                errors.push(`${name} must be provided.`);
-            } else if (inputs[key].value <= 0) {
-                errors.push(`${name} must be positive.`);
+        // Get unit selections
+        const lmUnitEl = document.getElementById('ci-lm-unit');
+        const lUnitEl = document.getElementById('ci-l-unit');
+        const fsUnitEl = document.getElementById('ci-fs-unit');
+
+        // Validate and convert inputs
+        if (vin === null || vin <= 0) {
+            errors.push('V_IN must be positive.');
+        } else {
+            values.vin = vin;
+        }
+
+        if (vout === null || vout <= 0) {
+            errors.push('V_OUT must be positive.');
+        } else {
+            values.vout = vout;
+        }
+
+        if (lmRaw === null || lmRaw <= 0) {
+            errors.push('L_m must be positive.');
+        } else {
+            values.lm = convertInductanceToHenry(lmRaw, lmUnitEl?.value || 'uH');
+            if (isNaN(values.lm)) {
+                errors.push('Invalid L_m unit.');
             }
         }
-        
-        if (inputs.nph.value && !Number.isInteger(inputs.nph.value)) {
-            errors.push('N_ph must be an integer.');
+
+        if (lRaw === null || lRaw <= 0) {
+            errors.push('L must be positive.');
+        } else {
+            values.l = convertInductanceToHenry(lRaw, lUnitEl?.value || 'uH');
+            if (isNaN(values.l)) {
+                errors.push('Invalid L unit.');
+            }
         }
-         if (inputs.nph.value && inputs.nph.value < 2) {
-            errors.push('N_ph must be 2 or greater.');
+
+        if (fsRaw === null || fsRaw <= 0) {
+            errors.push('F_S must be positive.');
+        } else {
+            values.fs = convertFrequencyToHz(fsRaw, fsUnitEl?.value || 'MHz');
+            if (isNaN(values.fs)) {
+                errors.push('Invalid F_S unit.');
+            }
         }
-        
-        if (errors.length > 0) return { error: errors.join('; ') };
-        
-        for (const key in elements.inputs) {
-            values[key] = getActualValue(inputs[key]);
+
+        if (nphRaw === null || !Number.isInteger(nphRaw) || nphRaw < 2) {
+            errors.push('N_ph must be an integer >= 2.');
+        } else {
+            values.nph = nphRaw;
         }
-        
-        if (values.vin <= values.vout) {
+
+        // Additional validation: V_IN must be greater than V_OUT
+        if (values.vin && values.vout && values.vin <= values.vout) {
             errors.push('V_IN must be greater than V_OUT.');
         }
 
-        if (errors.length > 0) return { error: errors.join('; ') };
+        if (errors.length > 0) {
+            return { error: errors.join(' ') };
+        }
 
         return { values };
     }
-    
+
+    function clearOutputs() {
+        utils.setValue('ci-d', '', 2);
+        utils.setValue('ci-fom', '', 4);
+        utils.setValue('ci-dildl', '', 6);
+        utils.setValue('ci-dilcl', '', 6);
+    }
+
     function calculateAndDisplay() {
-        elements.error.textContent = '';
-        const clearOutputs = () => Object.values(elements.outputs).forEach(id => setSciOutput(id, { value: NaN }));
+        const errorEl = document.getElementById('ci-error');
+        if (errorEl) errorEl.textContent = '';
+        
+        clearOutputs();
 
         const { values, error } = getAndValidateInputs();
 
         if (error) {
-            elements.error.textContent = `Error: ${error}`;
-            clearOutputs();
+            if (errorEl) errorEl.textContent = `Error: ${error}`;
             return;
         }
 
@@ -117,7 +136,7 @@
             const rho = lm / l;
             const j = Math.floor(D * nph);
 
-            const dIL_DL_raw = (vin - vout) / l * (D / fs);
+            const dIL_DL = (vin - vout) / l * (D / fs);
 
             const factor = (rho / (rho + 1)) * (1 / (nph - 1));
             const fom_num = 1 + factor;
@@ -126,37 +145,55 @@
             const term3 = (nph * D * (nph - 2 * j - 1) + j * (j + 1)) / (nph * (1 - D));
             const fom_den = 1 - (term1 + term2 + term3) * factor;
 
-            if (fom_den === 0) throw new Error("FOM denominator is zero, cannot calculate.");
+            if (Math.abs(fom_den) < 1e-12) {
+                throw new Error("FOM denominator is zero, cannot calculate.");
+            }
+            
             const fom = fom_num / fom_den;
+            const dIL_CL = dIL_DL / fom;
 
-            const dIL_CL_raw = dIL_DL_raw / fom;
-
-            if (![D, fom, dIL_DL_raw, dIL_CL_raw].every(isFinite)) {
+            if (![D, fom, dIL_DL, dIL_CL].every(isFinite)) {
                 throw new Error("Calculation resulted in a non-finite number.");
             }
 
-            setSciOutput(elements.outputs.d, formatToEngineering(D));
-            setSciOutput(elements.outputs.fom, formatToEngineering(fom));
-            setSciOutput(elements.outputs.dildl, formatToEngineering(dIL_DL_raw));
-            setSciOutput(elements.outputs.dilcl, formatToEngineering(dIL_CL_raw));
+            // Display results with appropriate formatting
+            utils.setValue('ci-d', D * 100, 2);    // Duty cycle in %
+            utils.setValue('ci-fom', fom, 4);      // FOM (no unit)
+            utils.setValue('ci-dildl', dIL_DL, 6); // Ripple in A
+            utils.setValue('ci-dilcl', dIL_CL, 6); // Ripple in A
 
         } catch (e) {
-            elements.error.textContent = `Error: ${e.message}`;
+            if (errorEl) errorEl.textContent = `Error: ${e.message}`;
             clearOutputs();
         }
     }
 
-    // --- INITIALIZATION ---
-    function init() {
-        if (elements.button) {
-            elements.button.addEventListener('click', calculateAndDisplay);
-        }
+    // --- EVENT LISTENER SETUP ---
+    // Use same pattern as other calculators (buck.js, boost.js, etc.)
+    function setupEventListeners() {
+        const inputIds = ['ci-vin', 'ci-vout', 'ci-lm', 'ci-l', 'ci-fs', 'ci-nph'];
+        const unitSelectIds = ['ci-lm-unit', 'ci-l-unit', 'ci-fs-unit'];
+
+        inputIds.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('input', calculateAndDisplay);
+            }
+        });
+
+        unitSelectIds.forEach(id => {
+            const select = document.getElementById(id);
+            if (select) {
+                select.addEventListener('change', calculateAndDisplay);
+            }
+        });
     }
 
+    // Set up listeners when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', setupEventListeners);
     } else {
-        init();
+        setupEventListeners();
     }
 
-})(); 
+})();

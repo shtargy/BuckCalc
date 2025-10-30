@@ -1,15 +1,18 @@
 # DC/DC Converter Calculators
 
-A web-based calculator suite for DC/DC converter calculations. Currently includes:
+A web-based calculator suite for electronics design calculations. Currently includes:
 
-1. Buck Converter Calculator
+1. **Buck Converter Calculator**
    - Input/Output voltage
    - Inductance
    - Switching frequency
    - Inductor current ripple
    - High/Low-side switch voltage drop
 
-2. Inverting Buck-Boost Calculator
+2. **Boost Converter Calculator**
+   - DC-DC step-up converter calculations
+
+3. **Inverting Buck-Boost Calculator**
    - Input/Output voltage
    - Average inductor current
    - Output current
@@ -17,11 +20,36 @@ A web-based calculator suite for DC/DC converter calculations. Currently include
    - Switching frequency
    - Inductor current ripple
 
-3. Resistor Divider Calculator
+4. **Resistor Divider Calculator**
    - Resistor selection based on voltage divider equation
-   - Standard resistor value lookup
+   - Standard resistor value lookup (E24, E96, E192)
    - Current and power calculation
    - Sorting by ratio or current error
+
+5. **Standard Resistor Finder**
+   - Find nearest standard resistor values
+   - Multiple tolerance levels (0.1%, 1%, 5%)
+   - Current calculation based on voltage
+
+6. **Coupled Inductor Ripple Calculator**
+   - Multiphase buck converter ripple calculations
+   - Discrete and coupled inductor ripple comparison
+   - Figure of Merit (FOM) calculation
+   - Unit dropdowns for inductance and frequency
+
+7. **Wafer Die Cost Calculator**
+   - Gross dies per wafer calculation
+   - Yield and cost per die metrics
+   - Power FET cost calculations
+
+8. **PCB Calculator**
+   - PCB-related calculations
+
+9. **Thermal Resistance Calculator**
+   - Thermal analysis calculations
+
+10. **RLC Calculator**
+    - RLC circuit calculations
 
 ## Live Demo
 Visit the calculators at: https://shtargy.github.io/BuckCalc/
