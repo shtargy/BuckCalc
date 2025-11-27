@@ -317,9 +317,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getErrorClass(absError, type) {
+        if (absError < 0.5) return 'error-excellent';
         if (absError < 1) return 'error-good';
-        if (absError < 5) return 'error-ok';
-        return 'error-bad';
+        if (absError < 5) return 'error-acceptable';
+        return 'error-poor';
     }
 
     function addPairsToTable(tbody, pairs) {
@@ -349,7 +350,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function init() {
-        // Initialization logic can go here if needed in the future
+        // Add Enter key support to input fields
+        const inputIds = ['div-vtop', 'div-vmid', 'div-vbot', 'div-rtop', 'div-rbot'];
+        inputIds.forEach(id => {
+            const input = document.getElementById(id);
+            if (input) {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        // Determine which field to calculate based on which is likely missing
+                        // Default to calculating vmid
+                        calculateDivider('vmid');
+                    }
+                });
+            }
+        });
     }
     
     // --- Global Export ---
@@ -358,4 +372,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initialization ---
     init();
+
+    // Register with calculator registry
+    if (window.calculatorRegistry) {
+        window.calculatorRegistry.register(
+            'divider',
+            'Resistor Divider',
+            'Voltage divider and resistor pair calculator with standard value matching',
+            { calculateDivider, showStandardPairs }
+        );
+    }
 });

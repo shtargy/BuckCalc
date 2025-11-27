@@ -1,58 +1,67 @@
 // Main JavaScript file for DC-DC converter calculators
 
+'use strict';
+
 // Initialize when the document is ready
 document.addEventListener('DOMContentLoaded', initApplication);
 
 function initApplication() {
     try {
-        // Initialize calculator sidebar
+        // Initialize calculator sidebar with event listeners
         initSidebar();
         
-        // Set default calculator
-        selectCalculator('buck');
+        // Set default calculator (or restore from URL hash)
+        const hashCalc = window.location.hash.replace('#', '');
+        const defaultCalc = hashCalc && document.getElementById(`${hashCalc}-calculator`) ? hashCalc : 'buck';
+        selectCalculator(defaultCalc);
         
-        // Log that initialization is complete
-        console.log('DC-DC Converter Calculator initialization complete');
+        // Log that initialization is complete (only in debug mode)
+        if (window.utils && window.utils.debugLog) {
+            utils.debugLog('DC-DC Converter Calculator initialization complete');
+        }
     } catch (error) {
         console.error('Error during application initialization:', error);
         alert('An error occurred while loading the application. Please refresh the page and try again.');
     }
 }
 
-// Initialize the sidebar with all registered calculators
+// Initialize the sidebar with event listeners (replacing inline onclick handlers)
 function initSidebar() {
-    // Get sidebar element
     const sidebarList = document.querySelector('.calculator-list');
     
-    // Check if calculator registry is available
-    if (!window.calculatorRegistry) {
-        console.error('Calculator registry not found. Make sure calculator-registry.js is loaded before main.js');
+    if (!sidebarList) {
+        console.error('Sidebar list not found');
         return;
     }
     
-    // Check if we should dynamically rebuild the sidebar
-    const shouldRebuild = false; // Set to true if you want to rebuild the sidebar dynamically
-    
-    if (shouldRebuild && calculatorRegistry && sidebarList) {
-        // Clear existing items
-        sidebarList.innerHTML = '';
-        
-        // Add all registered calculators
-        calculatorRegistry.getAll().forEach(calculator => {
-            const item = document.createElement('li');
-            item.className = 'calculator-item';
-            item.setAttribute('data-calculator', calculator.id);
-            item.textContent = calculator.name;
-            item.onclick = () => selectCalculator(calculator.id);
+    // Add click event listeners to all calculator items (replacing inline onclick)
+    const calculatorItems = sidebarList.querySelectorAll('.calculator-item');
+    calculatorItems.forEach(item => {
+        const calculatorId = item.getAttribute('data-calculator');
+        if (calculatorId) {
+            // Remove any inline onclick (if present)
+            item.removeAttribute('onclick');
             
-            sidebarList.appendChild(item);
-        });
-    }
+            // Add event listener
+            item.addEventListener('click', () => selectCalculator(calculatorId));
+            
+            // Add keyboard accessibility
+            item.setAttribute('tabindex', '0');
+            item.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    selectCalculator(calculatorId);
+                }
+            });
+        }
+    });
 }
 
 // Switch between calculators
 function selectCalculator(calculatorId) {
-    console.log(`Selecting calculator: ${calculatorId}`);
+    if (window.utils && window.utils.debugLog) {
+        utils.debugLog(`Selecting calculator: ${calculatorId}`);
+    }
     
     try {
         // Hide all calculators
@@ -78,10 +87,23 @@ function selectCalculator(calculatorId) {
                 item.classList.add('active');
             }
         });
+        
+        // Update URL hash for bookmarking (without triggering scroll)
+        if (history.replaceState) {
+            history.replaceState(null, null, `#${calculatorId}`);
+        }
     } catch (error) {
         console.error(`Error selecting calculator ${calculatorId}:`, error);
     }
 }
+
+// Handle browser back/forward navigation
+window.addEventListener('hashchange', () => {
+    const hashCalc = window.location.hash.replace('#', '');
+    if (hashCalc && document.getElementById(`${hashCalc}-calculator`)) {
+        selectCalculator(hashCalc);
+    }
+});
 
 // Make selectCalculator globally accessible
 window.selectCalculator = selectCalculator; 

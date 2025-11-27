@@ -43,7 +43,10 @@ const calculatorRegistry = {
             functions: functions
         };
         
-        console.log(`Calculator registered: ${name} (${id})`);
+        // Use debug logging if available
+        if (window.utils && window.utils.debugLog) {
+            window.utils.debugLog(`Calculator registered: ${name} (${id})`);
+        }
         return calculators[id];
     },
     

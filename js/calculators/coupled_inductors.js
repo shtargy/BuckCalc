@@ -196,4 +196,14 @@
         setupEventListeners();
     }
 
+    // Register with calculator registry
+    if (window.calculatorRegistry) {
+        window.calculatorRegistry.register(
+            'coupled-inductor',
+            'Coupled Inductors',
+            'Calculates ripple current for coupled inductors in multiphase buck converters',
+            { calculateAndDisplay }
+        );
+    }
+
 })();

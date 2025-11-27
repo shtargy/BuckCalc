@@ -283,4 +283,14 @@
         init();
     }
 
+    // Register with calculator registry
+    if (window.calculatorRegistry) {
+        window.calculatorRegistry.register(
+            'rlc',
+            'RLC Calculator',
+            'RC time constant, reactance, and LC resonance calculators',
+            { formatToEngineering }
+        );
+    }
+
 })();

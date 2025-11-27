@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Buck Converter Calculator (v1.0.0)
+ * Buck Converter Calculator (v1.1.0)
  *
  * Provides functionality to automatically calculate buck converter performance
  * metrics based on user-provided inputs.
@@ -21,7 +21,7 @@
  *
  */
 
-const BUCK_MICRO_CONVERSION_FACTOR = 1e6;
+(function() {
 
 function calculateBuckDutyCycle(vin, vout, vdsh, vdsl) {
     if (vin - vdsh === 0) return null;
@@ -32,12 +32,12 @@ function calculateBuckTon(dutyCycle, fsw) {
     const fswHz = utils.mhzToHz(fsw);
     if (fswHz === 0) return null;
     const tonSeconds = dutyCycle / fswHz;
-    return tonSeconds * BUCK_MICRO_CONVERSION_FACTOR;
+    return tonSeconds * utils.constants.MICRO;
 }
 
 function calculateBuckIlpp(vin, vout, l, fsw, dutyCycle) {
     const fswHz = utils.mhzToHz(fsw);
-    const lH = l / BUCK_MICRO_CONVERSION_FACTOR;
+    const lH = l / utils.constants.MICRO;
     if (fswHz * lH === 0) return null;
     // The ripple equation uses the simple duty cycle, not the one adjusted for Vds.
     // However, for consistency with other calculators, we will use the adjusted one.
@@ -97,7 +97,9 @@ function calculateAllBuckMetrics() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+// --- Event Listener Setup ---
+
+function setupEventListeners() {
     const buckInputIds = [
         'buck-vin', 'buck-vout', 'buck-inductance',
         'buck-fsw', 'buck-vdsh', 'buck-vdsl'
@@ -107,6 +109,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('input', calculateAllBuckMetrics);
+            // Add Enter key support
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') calculateAllBuckMetrics();
+            });
         }
     });
-}); 
+}
+
+// --- Initialization ---
+function init() {
+    setupEventListeners();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+// Register with calculator registry
+if (window.calculatorRegistry) {
+    window.calculatorRegistry.register(
+        'buck',
+        'Buck Converter',
+        'DC-DC step-down converter calculator',
+        { calculateAllBuckMetrics }
+    );
+}
+
+})(); 

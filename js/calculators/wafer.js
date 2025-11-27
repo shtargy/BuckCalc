@@ -115,6 +115,7 @@
                     const targetId = event.target.id;
 
                     if (targetId === 'wafer-die-area') {
+                        // User entered area directly - calculate X and Y (assume square die)
                         const area = getNumericValue(getElement('wafer-die-area'), 0);
                         if (area > 0) {
                             const side = Math.sqrt(area);
@@ -122,7 +123,16 @@
                             setNumericValue(getElement('wafer-die-y'), side, 4);
                         }
                     } else if (targetId === 'wafer-die-x' || targetId === 'wafer-die-y') {
-                        setNumericValue(getElement('wafer-die-area'), null);
+                        // User entered X or Y - calculate and update the area
+                        const dieX = getNumericValue(getElement('wafer-die-x'), 0);
+                        const dieY = getNumericValue(getElement('wafer-die-y'), 0);
+                        if (dieX > 0 && dieY > 0) {
+                            const calculatedArea = dieX * dieY;
+                            setNumericValue(getElement('wafer-die-area'), calculatedArea, 4);
+                        } else {
+                            // Clear area if either dimension is missing/invalid
+                            setNumericValue(getElement('wafer-die-area'), null);
+                        }
                     }
                     
                     calculateAllPerformanceMetrics();
@@ -136,6 +146,16 @@
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
+    }
+
+    // Register with calculator registry
+    if (window.calculatorRegistry) {
+        window.calculatorRegistry.register(
+            'wafer',
+            'Wafer Die Cost',
+            'Calculates die cost metrics including gross dies per wafer and power FET cost',
+            { calculateAllPerformanceMetrics, calculateGdpwEquation }
+        );
     }
 
 })(); 

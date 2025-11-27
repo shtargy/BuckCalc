@@ -1,30 +1,51 @@
 'use strict';
 
 (function() {
-    // DOM Element References
-    const elements = {
-        x: document.getElementById('thermal-x'),
-        y: document.getElementById('thermal-y'),
-        z: document.getElementById('thermal-z'),
-        k: document.getElementById('thermal-k'),
-        rth: document.getElementById('thermal-rth'),
-        error: document.getElementById('thermal-error')
-    };
+    // DOM Element cache (populated on init)
+    let elements = {};
 
-    const buttons = {
-        x: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(1) button'),
-        y: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(2) button'),
-        z: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(3) button'),
-        k: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(4) button'),
-        rth: document.querySelector('#thermal-resistance-calculator .input-group:nth-of-type(5) button')
-    };
-    
-    // Attach Event Listeners
-    if(buttons.x) buttons.x.addEventListener('click', () => calculate('x'));
-    if(buttons.y) buttons.y.addEventListener('click', () => calculate('y'));
-    if(buttons.z) buttons.z.addEventListener('click', () => calculate('z'));
-    if(buttons.k) buttons.k.addEventListener('click', () => calculate('k'));
-    if(buttons.rth) buttons.rth.addEventListener('click', () => calculate('rth'));
+    function getElements() {
+        return {
+            x: document.getElementById('thermal-x'),
+            y: document.getElementById('thermal-y'),
+            z: document.getElementById('thermal-z'),
+            k: document.getElementById('thermal-k'),
+            rth: document.getElementById('thermal-rth'),
+            error: document.getElementById('thermal-error')
+        };
+    }
+
+    function setupEventListeners() {
+        const container = document.getElementById('thermal-resistance-calculator');
+        if (!container) return;
+
+        // Use event delegation on the container for all buttons
+        container.addEventListener('click', (event) => {
+            if (event.target.tagName !== 'BUTTON') return;
+            
+            // Find the input field in the same input-group as the clicked button
+            const inputGroup = event.target.closest('.input-group');
+            if (!inputGroup) return;
+            
+            const input = inputGroup.querySelector('input[type="number"]');
+            if (!input) return;
+            
+            // Extract the target key from the input id (e.g., 'thermal-x' -> 'x')
+            const targetKey = input.id.replace('thermal-', '');
+            calculate(targetKey);
+        });
+
+        // Add Enter key support for inputs
+        const inputs = container.querySelectorAll('input[type="number"]');
+        inputs.forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    const targetKey = input.id.replace('thermal-', '');
+                    calculate(targetKey);
+                }
+            });
+        });
+    }
 
     function getParsedInputs(excludeKey) {
         const inputs = {};
@@ -97,5 +118,28 @@
             elements.error.textContent = `Error: ${error.message}`;
             elements[targetKey].value = '';
         }
+    }
+
+    // --- Initialization ---
+    function init() {
+        elements = getElements();
+        setupEventListeners();
+    }
+
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+
+    // Register with calculator registry
+    if (window.calculatorRegistry) {
+        window.calculatorRegistry.register(
+            'thermal-resistance',
+            'Thermal Resistance',
+            'Calculates thermal resistance of a rectangular prism along the Z-direction',
+            { calculate }
+        );
     }
 })(); 

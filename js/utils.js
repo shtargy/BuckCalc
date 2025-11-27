@@ -8,12 +8,18 @@
 // --- Constants ---
 
 // Conversion Factors
-const MICRO_CONVERSION_FACTOR = 1000000; // For µH, µs, etc.
-const MILLI_CONVERSION_FACTOR = 1000;    // For mΩ, mA, etc.
+const MICRO_CONVERSION_FACTOR = 1e6; // For µH, µs, etc.
+const MILLI_CONVERSION_FACTOR = 1e3; // For mΩ, mA, etc.
+const NANO_CONVERSION_FACTOR = 1e9;  // For nH, ns, etc.
+const KILO_CONVERSION_FACTOR = 1e3;  // For kHz, kΩ, etc.
+const MEGA_CONVERSION_FACTOR = 1e6;  // For MHz, MΩ, etc.
 
 // Common Solver Parameters (if applicable)
 const ITERATION_LIMIT = 10;          // Default max iterations for solvers
 const CONVERGENCE_THRESHOLD = 0.001; // Default tolerance for solvers
+
+// Debug flag - set to false for production
+const DEBUG_MODE = false;
 
 // --- E-Series Resistor Values (for standard resistor calculations) ---
 const E24_VALUES = [
@@ -305,6 +311,13 @@ function utils_findClosestValueIndex_binarySearch(sortedArray, targetValue) {
     return finalClosestIndex;
 }
 
+// Logging helper that respects debug mode
+function debugLog(...args) {
+    if (DEBUG_MODE) {
+        console.log('[Calculator]', ...args);
+    }
+}
+
 // Export utilities to global scope
 window.utils = {
     getValue,
@@ -315,5 +328,14 @@ window.utils = {
     hzToMhz,
     getStandardValues: utils_getStandardValues,
     formatResistorValue: formatResistorValue,
-    findClosestValueIndex: utils_findClosestValueIndex_binarySearch
+    findClosestValueIndex: utils_findClosestValueIndex_binarySearch,
+    debugLog,
+    // Export constants for use in other modules
+    constants: {
+        MICRO: MICRO_CONVERSION_FACTOR,
+        MILLI: MILLI_CONVERSION_FACTOR,
+        NANO: NANO_CONVERSION_FACTOR,
+        KILO: KILO_CONVERSION_FACTOR,
+        MEGA: MEGA_CONVERSION_FACTOR
+    }
 }; 

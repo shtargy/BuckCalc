@@ -79,9 +79,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('input', () => rsv_updateDisplay(null));
+            // Add Enter key support
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') rsv_updateDisplay(null);
+            });
         }
     });
 
     // --- Global Export ---
     window.rsv_updateDisplay = rsv_updateDisplay;
+
+    // Register with calculator registry
+    if (window.calculatorRegistry) {
+        window.calculatorRegistry.register(
+            'res-std-values',
+            'Standard Resistor Finder',
+            'Finds standard resistor values near a target value',
+            { rsv_updateDisplay }
+        );
+    }
 }); 

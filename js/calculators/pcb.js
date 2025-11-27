@@ -328,4 +328,19 @@ window.calculateTraceThickness = calculateTraceThickness;
 window.calculateViaResistance = calculateViaResistance;
 window.calculateViaOuterDiameter = calculateViaOuterDiameter;
 window.calculateViaWallThickness = calculateViaWallThickness;
-window.calculateViaHeight = calculateViaHeight; 
+window.calculateViaHeight = calculateViaHeight;
+
+// Register with calculator registry
+if (window.calculatorRegistry) {
+    window.calculatorRegistry.register(
+        'pcb',
+        'PCB Calculator',
+        'Copper trace and via resistance calculations for PCB design',
+        { 
+            calculateTraceResistance, calculateTraceLength, 
+            calculateTraceWidth, calculateTraceThickness,
+            calculateViaResistance, calculateViaOuterDiameter,
+            calculateViaWallThickness, calculateViaHeight
+        }
+    );
+} 

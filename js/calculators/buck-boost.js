@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Inverting Buck-Boost Converter Calculator (v1.0.0)
+ * Inverting Buck-Boost Converter Calculator (v1.1.0)
  *
  * Provides functionality to automatically calculate buck-boost converter performance
  * metrics based on user-provided inputs. The inverting topology produces a
@@ -16,7 +16,7 @@
  * user modifies an input value, providing a seamless and responsive experience.
  */
 
-const BUCKBOOST_MICRO_CONVERSION_FACTOR = 1e6;
+(function() {
 
 // --- Core Calculation Functions ---
 
@@ -40,7 +40,7 @@ function calculateBuckBoostILavg(iout, dutyCycle) {
 
 function calculateBuckBoostDeltaIL(vin, dutyCycle, inductance, fsw) {
     const fswHz = utils.mhzToHz(fsw);
-    const lH = inductance / BUCKBOOST_MICRO_CONVERSION_FACTOR;
+    const lH = inductance / utils.constants.MICRO;
     const denominator = fswHz * lH;
     if (denominator < 1e-9) return null;
 
@@ -94,7 +94,7 @@ function calculateAllBuckBoostMetrics() {
 
 // --- Event Listener Setup ---
 
-document.addEventListener('DOMContentLoaded', function() {
+function setupEventListeners() {
     const ibbInputIds = [
         'ibb-vin', 'ibb-vout', 'ibb-iout', 
         'ibb-inductance', 'ibb-fsw'
@@ -104,6 +104,33 @@ document.addEventListener('DOMContentLoaded', function() {
         const input = document.getElementById(id);
         if (input) {
             input.addEventListener('input', calculateAllBuckBoostMetrics);
+            // Add Enter key support
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') calculateAllBuckBoostMetrics();
+            });
         }
     });
-}); 
+}
+
+// --- Initialization ---
+function init() {
+    setupEventListeners();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+
+// Register with calculator registry
+if (window.calculatorRegistry) {
+    window.calculatorRegistry.register(
+        'buck-boost',
+        'Inverting Buck-Boost',
+        'Inverting DC-DC buck-boost converter calculator',
+        { calculateAllBuckBoostMetrics }
+    );
+}
+
+})(); 
