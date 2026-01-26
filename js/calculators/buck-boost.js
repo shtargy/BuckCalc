@@ -63,14 +63,25 @@ function calculateAllBuckBoostMetrics() {
     const coreInputs = [vin, vout, iout, inductance, fsw];
     const coreInputNames = ['Input Voltage', 'Output Voltage', 'Output Current', 'Inductance', 'Switching Freq'];
 
+    const errorEl = document.getElementById('ibb-error');
+    const setError = (msg) => { if (errorEl) errorEl.textContent = msg || ''; };
     const clearOutputs = () => {
         utils.setValue('ibb-duty', '', 2);
         utils.setValue('ibb-ilavg', '', 3);
         utils.setValue('ibb-ilpp', '', 3);
     };
 
+    setError('');
+
     if (!utils.validateInputs(coreInputs, coreInputNames, true)) {
         clearOutputs();
+        setError('Enter Vin, Vout, Iout, L and Fsw to calculate.');
+        return;
+    }
+
+    if ([vin, vout, iout, inductance, fsw].some(v => v === null || v <= 0)) {
+        clearOutputs();
+        setError('Vin, |Vout|, Iout, L and Fsw must be positive values.');
         return;
     }
 
@@ -79,6 +90,7 @@ function calculateAllBuckBoostMetrics() {
     
     if (dutyCycle === null || dutyCycle >= 1) {
         clearOutputs();
+        setError('Duty cycle is out of range; check Vin and |Vout|.');
         return;
     }
 

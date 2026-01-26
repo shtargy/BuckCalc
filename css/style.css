@@ -184,6 +184,29 @@ body {
     border-color: var(--border-primary);
 }
 
+/* Wafer size select styling */
+.wafer-size-select {
+    width: 140px;
+    height: 32px;
+    padding: 5px;
+    border: 1px solid var(--border-secondary);
+    border-radius: 4px;
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+.wafer-size-select:focus {
+    outline: none;
+    border-color: var(--accent-secondary);
+    background-color: var(--bg-tertiary);
+}
+
+.wafer-size-select:hover {
+    border-color: var(--border-primary);
+}
+
 .calc-button {
     padding: 5px 10px;
     background-color: var(--accent-primary);
@@ -531,6 +554,15 @@ body {
     background-color: var(--accent-primary) !important;
     color: var(--text-on-accent) !important;
     font-weight: bold;
+}
+
+/* Generic inline error text */
+.error-message {
+    color: var(--error-poor);
+    margin-top: 8px;
+    margin-bottom: 0;
+    min-height: 18px;
+    font-size: 0.95em;
 }
 
 /* ================================

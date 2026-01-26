@@ -1,3 +1,5 @@
+'use strict';
+
 /**
  * Resistor Divider Calculator (v1.5.0)
  *

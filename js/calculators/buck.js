@@ -58,11 +58,31 @@ function calculateAllBuckMetrics() {
     const coreInputs = [vin, vout, inductance, fsw];
     const coreInputNames = ['Input Voltage', 'Output Voltage', 'Inductance', 'Switching Freq'];
 
-    if (!utils.validateInputs(coreInputs, coreInputNames, true)) {
-        // Clear outputs if inputs are missing
+    const errorEl = document.getElementById('buck-error');
+    const setError = (msg) => { if (errorEl) errorEl.textContent = msg || ''; };
+    const clearOutputs = () => {
         utils.setValue('buck-duty', '', 2);
         utils.setValue('buck-ton', '', 3);
         utils.setValue('buck-ilpp', '', 3);
+    };
+
+    setError('');
+
+    if (!utils.validateInputs(coreInputs, coreInputNames, true)) {
+        clearOutputs();
+        setError('Enter Vin, Vout, L and Fsw to calculate.');
+        return;
+    }
+
+    if ([vin, vout, inductance, fsw].some(v => v === null || v <= 0)) {
+        clearOutputs();
+        setError('Vin, Vout, L and Fsw must be positive values.');
+        return;
+    }
+
+    if (vin - vdsh <= 0) {
+        clearOutputs();
+        setError('Vin must be greater than Vds(hi).');
         return;
     }
 
@@ -73,7 +93,9 @@ function calculateAllBuckMetrics() {
     if (dutyCycle !== null && dutyCycle >= 0 && dutyCycle <= 1) {
         utils.setValue('buck-duty', dutyCycle * 100, 2); // Display as percentage
     } else {
-        utils.setValue('buck-duty', '', 2);
+        clearOutputs();
+        setError('Duty cycle is out of range. Check Vin/Vout and Vds values.');
+        return;
     }
     
     // 2. Ton

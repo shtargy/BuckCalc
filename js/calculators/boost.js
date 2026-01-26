@@ -83,6 +83,8 @@ function calculateAllBoostMetrics() {
     const coreInputs = [vin, vout, inductance, fsw, iout];
     const coreInputNames = ['Input Voltage', 'Output Voltage', 'Inductance', 'Switching Freq', 'Load Current'];
 
+    const errorEl = document.getElementById('boost-error');
+    const setError = (msg) => { if (errorEl) errorEl.textContent = msg || ''; };
     const clearOutputs = () => {
         utils.setValue('boost-duty', '', 2);
         utils.setValue('boost-ton', '', 3);
@@ -90,8 +92,23 @@ function calculateAllBoostMetrics() {
         utils.setValue('boost-ilavg', '', 3);
     };
 
+    setError('');
+
     if (!utils.validateInputs(coreInputs, coreInputNames, true)) {
         clearOutputs();
+        setError('Enter Vin, Vout, L, Fsw and Iout to calculate.');
+        return;
+    }
+
+    if ([vin, vout, inductance, fsw, iout].some(v => v === null || v <= 0)) {
+        clearOutputs();
+        setError('Vin, Vout, L, Fsw and Iout must be positive values.');
+        return;
+    }
+
+    if (vin - vdsh <= 0) {
+        clearOutputs();
+        setError('Vin must be greater than Vds(hi).');
         return;
     }
 
@@ -100,6 +117,7 @@ function calculateAllBoostMetrics() {
     
     if (dutyCycle === null || dutyCycle >= 1) {
         clearOutputs();
+        setError('Invalid operating point: ensure Vin < Vout and drops are reasonable.');
         return;
     }
 

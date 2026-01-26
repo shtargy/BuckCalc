@@ -111,6 +111,7 @@
                 <span class="unit">µs</span>
             </div>
         </div>
+        <p class="error-message" id="buck-error" aria-live="polite"></p>
     </div>
 
             <!-- Boost Converter Calculator -->
@@ -188,6 +189,7 @@
                 <span class="unit">µs</span>
             </div>
         </div>
+        <p class="error-message" id="boost-error" aria-live="polite"></p>
     </div>
 
             <!-- Inverting Buck-Boost Calculator -->
@@ -250,6 +252,7 @@
                         <span class="unit">%</span>
                     </div>
                 </div>
+            <p class="error-message" id="ibb-error" aria-live="polite"></p>
             </div>
 
             <!-- Resistor Divider Calculator -->
@@ -514,7 +517,7 @@
                 <h3>Wafer Specifications</h3>
                 <div class="input-group">
                     <label for="wafer-size">Wafer Size:</label>
-                    <select id="wafer-size" style="width: 140px; height: 32px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                    <select id="wafer-size" class="wafer-size-select">
                         <option value="150">150 mm</option>
                         <option value="200">200 mm</option>
                         <option value="300" selected>300 mm</option>
