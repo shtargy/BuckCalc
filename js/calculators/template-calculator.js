@@ -1,6 +1,9 @@
 // Template Calculator - Copy this file to create a new calculator
 // Make sure to name your file using consistent naming: your-calculator-name.js
 
+(function() {
+'use strict';
+
 // Define your calculator ID and name
 const CALCULATOR_ID = 'template';
 const CALCULATOR_NAME = 'Template Calculator';
@@ -11,18 +14,18 @@ function calculateA() {
     // Get input values using utils
     const b = utils.getValue(`${CALCULATOR_ID}-b`);
     const c = utils.getValue(`${CALCULATOR_ID}-c`);
-    
+
     // Validate inputs
     if (!utils.validateInputs(
-        [b, c], 
+        [b, c],
         ['Parameter B', 'Parameter C']
     )) {
         return;
     }
-    
+
     // Perform calculation
     const a = b + c; // Replace with actual formula
-    
+
     // Set result
     utils.setValue(`${CALCULATOR_ID}-a`, a);
 }
@@ -31,14 +34,14 @@ function calculateA() {
 function calculateB() {
     const a = utils.getValue(`${CALCULATOR_ID}-a`);
     const c = utils.getValue(`${CALCULATOR_ID}-c`);
-    
+
     if (!utils.validateInputs(
-        [a, c], 
+        [a, c],
         ['Parameter A', 'Parameter C']
     )) {
         return;
     }
-    
+
     const b = a - c; // Replace with actual formula
     utils.setValue(`${CALCULATOR_ID}-b`, b);
 }
@@ -47,14 +50,14 @@ function calculateB() {
 function calculateC() {
     const a = utils.getValue(`${CALCULATOR_ID}-a`);
     const b = utils.getValue(`${CALCULATOR_ID}-b`);
-    
+
     if (!utils.validateInputs(
-        [a, b], 
+        [a, b],
         ['Parameter A', 'Parameter B']
     )) {
         return;
     }
-    
+
     const c = a - b; // Replace with actual formula
     utils.setValue(`${CALCULATOR_ID}-c`, c);
 }
@@ -76,4 +79,6 @@ if (window.calculatorRegistry) {
 // Make functions globally accessible
 window.templateCalculateA = calculateA;
 window.templateCalculateB = calculateB;
-window.templateCalculateC = calculateC; 
+window.templateCalculateC = calculateC;
+
+})();

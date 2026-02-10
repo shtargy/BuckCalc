@@ -311,34 +311,6 @@ body {
     font-style: italic;
 }
 
-/* Sorting controls */
-.sort-controls {
-    margin: 10px 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.sort-button {
-    padding: 5px 10px;
-    border: 1px solid var(--border-primary);
-    background-color: var(--bg-tertiary);
-    color: var(--text-on-accent-secondary);
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.9em;
-}
-
-.sort-button:hover {
-    background-color: var(--border-primary);
-}
-
-.sort-button.active {
-    background-color: var(--accent-secondary);
-    color: var(--text-on-accent);
-    border-color: var(--accent-secondary-hover);
-}
-
 /* Error classes for color coding */
 .error-excellent {
     color: var(--error-excellent);

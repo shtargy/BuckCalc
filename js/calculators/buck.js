@@ -35,14 +35,13 @@ function calculateBuckTon(dutyCycle, fsw) {
     return tonSeconds * utils.constants.MICRO;
 }
 
-function calculateBuckIlpp(vin, vout, l, fsw, dutyCycle) {
+function calculateBuckIlpp(vout, vdsl, l, fsw, dutyCycle) {
     const fswHz = utils.mhzToHz(fsw);
     const lH = l / utils.constants.MICRO;
     if (fswHz * lH === 0) return null;
-    // The ripple equation uses the simple duty cycle, not the one adjusted for Vds.
-    // However, for consistency with other calculators, we will use the adjusted one.
-    // This can be revisited if a more "ideal" calculation is preferred.
-    return (vout * (1 - dutyCycle)) / (fswHz * lH);
+    // Using Toff equation: ΔiL = (Vout + Vdsl) * (1 - D) / (fsw * L)
+    // This matches how the boost uses (Vin - Vdsh) in its ripple equation.
+    return ((vout + vdsl) * (1 - dutyCycle)) / (fswHz * lH);
 }
 
 function calculateAllBuckMetrics() {
@@ -111,7 +110,7 @@ function calculateAllBuckMetrics() {
     }
 
     // 3. iL(p-p)
-    const ilpp = calculateBuckIlpp(vin, vout, inductance, fsw, dutyCycle);
+    const ilpp = calculateBuckIlpp(vout, vdsl, inductance, fsw, dutyCycle);
     if (ilpp !== null) {
         utils.setValue('buck-ilpp', ilpp, 3);
     } else {

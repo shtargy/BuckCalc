@@ -339,6 +339,7 @@
                         </table>
                     </div>
                 </div>
+                <p class="error-message" id="divider-error" aria-live="polite"></p>
             </div>
 
             <!-- Res Std Values Calculator -->
@@ -386,6 +387,7 @@
                         </table>
                     </div>
                 </div>
+                <p class="error-message" id="rsv-error" aria-live="polite"></p>
             </div>
 
             <!-- PCB Calculator -->
@@ -400,7 +402,7 @@
                         <label for="pcb-trace-temperature">Temperature:</label>
                         <input type="number" id="pcb-trace-temperature" step="1" value="20">
                         <span class="unit">°C</span>
-                        <span></span>
+                        <span><!-- grid placeholder --></span>
                     </div>
                     
                     <div class="input-group">
@@ -440,7 +442,7 @@
                         <label for="pcb-via-temperature">Temperature:</label>
                         <input type="number" id="pcb-via-temperature" step="1" value="20">
                         <span class="unit">°C</span>
-                        <span></span>
+                        <span><!-- grid placeholder --></span>
                     </div>
                     
                     <div class="input-group">
@@ -471,6 +473,7 @@
                         <button class="calc-button" onclick="window.calculateViaResistance()">Calculate</button>
                     </div>
                 </div>
+                <p class="error-message" id="pcb-error" aria-live="polite"></p>
             </div>
 
             <!-- Wafer Die Cost Calculator -->
@@ -576,6 +579,7 @@
                         <span class="unit">¢·mΩ</span>
                     </div>
                 </div>
+                <p class="error-message" id="wafer-error" aria-live="polite"></p>
             </div>
 
             <!-- Thermal Resistance Calculator -->
@@ -618,7 +622,7 @@
                      <button class="calc-button">Calculate</button>
                 </div>
 
-                <p id="thermal-error" class="error-message"></p>
+                <p id="thermal-error" class="error-message" aria-live="polite"></p>
             </div>
 
             <!-- RLC Calculator -->
@@ -664,7 +668,7 @@
                         <span class="unit">Hz</span>
                     </div>
 
-                    <div id="rc-error" class="error-message"></div>
+                    <div id="rc-error" class="error-message" aria-live="polite"></div>
                 </div>
 
                 <hr>
@@ -719,7 +723,7 @@
                         <button class="calc-button" data-target="XL">Calculate</button>
                     </div>
 
-                    <div id="reactance-error" class="error-message"></div>
+                    <div id="reactance-error" class="error-message" aria-live="polite"></div>
                 </div>
 
                 <hr>
@@ -756,7 +760,7 @@
                         <button class="calc-button" data-target="f0">Calculate</button>
                     </div>
                     
-                    <div id="lc-error" class="error-message"></div>
+                    <div id="lc-error" class="error-message" aria-live="polite"></div>
                 </div>
 
                 <hr>
@@ -833,7 +837,7 @@
                     </div>
                 </div>
 
-                <div id="ci-error" class="error-message"></div>
+                <div id="ci-error" class="error-message" aria-live="polite"></div>
             </div>
         </div>
     </div>

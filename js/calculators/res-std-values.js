@@ -49,7 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const endIndex = Math.min(allStdValues_Ohm.length - 1, closestIndex + numValuesToShow);
         const results_Ohm = allStdValues_Ohm.slice(startIndex, endIndex + 1);
 
-        if (!isNaN(voltage) && voltage !== 0) {
+        if (voltage !== null && !isNaN(voltage) && voltage !== 0) {
             currentColumnHeader.textContent = `Current @ ${voltage.toFixed(2)}V (mA)`;
         } else {
             currentColumnHeader.textContent = 'Current (mA)';
@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         results_Ohm.forEach(stdValue_Ohm => {
             const errorPercent = ((stdValue_Ohm - targetResistor_Ohm) / targetResistor_Ohm) * 100;
             let currentText = '---';
-            if (!isNaN(voltage) && voltage !== 0 && stdValue_Ohm > 0) {
+            if (voltage !== null && !isNaN(voltage) && voltage !== 0 && stdValue_Ohm > 0) {
                 const current_mA = (voltage / stdValue_Ohm) * 1000;
                 currentText = current_mA.toPrecision(3);
             }

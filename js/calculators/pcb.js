@@ -1,15 +1,15 @@
 'use strict';
 
 /**
- * PCB Calculator (v1.0.0)
+ * PCB Calculator (v1.0.1)
  *
  * Provides functionality to calculate PCB-related parameters such as:
  * - Copper trace resistance: based on length, width, and thickness
  * - Via resistance: based on outer diameter, wall thickness, and height
- * 
+ *
  * This module handles all the mathematical calculations for PCB designs,
  * which are important in power circuits where resistance can affect performance.
- * 
+ *
  * Usage:
  * - Each function calculates resistance based on the provided parameters
  * - Input values are obtained from HTML form elements
@@ -17,10 +17,26 @@
  * - All functions use common utilities from utils.js for consistency
  */
 
-// Resistivity constants
+(function() {
+
+// --- Constants ---
+
+// Resistivity
 const COPPER_RESISTIVITY_20C = 1.68e-8;  // Resistivity of copper at 20°C in ohm-meters
 const COPPER_TEMP_COEFFICIENT = 0.00393; // Temperature coefficient of resistivity for copper (per °C)
 const REFERENCE_TEMP = 20;               // Reference temperature in °C
+
+// Unit conversions
+const MM_TO_M = 0.001;
+const MICRON_TO_M = 1e-6;
+const OHM_TO_MILLIOHM = 1000;
+const MILLIOHM_TO_OHM = 0.001;
+
+// --- Error Display ---
+function showPcbError(msg) {
+    const el = document.getElementById('pcb-error');
+    if (el) el.textContent = msg || '';
+}
 
 /**
  * Helper function to manage calculation flow for PCB calculator.
@@ -48,10 +64,14 @@ function calculateAndUpdatePCB(inputIds, outputId, calculationFn, outputDecimals
 
     const nonTempValues = inputIds.filter(id => !id.includes('-temperature')).map(id => valueMap.get(id));
 
-    if (!utils.validateInputs(nonTempValues, valueNames, false)) {
-        return; // Validation failed, message shown by util
+    showPcbError('');
+
+    if (!utils.validateInputs(nonTempValues, valueNames, true)) {
+        const missing = valueNames.filter((_, i) => nonTempValues[i] === null || isNaN(nonTempValues[i]));
+        showPcbError(`Please enter values for: ${missing.join(', ')}`);
+        return;
     }
-    
+
     if (temperatureId && !validateTemperature(temperature)) {
         return; // Validation failed, message shown by util
     }
@@ -83,9 +103,9 @@ function calculateCopperResistivity(temperature) {
 function validateTemperature(temperature) {
     const MIN_TEMP = -50;
     const MAX_TEMP = 200;
-    
+
     if (temperature < MIN_TEMP || temperature > MAX_TEMP) {
-        alert(`Temperature must be between ${MIN_TEMP}°C and ${MAX_TEMP}°C`);
+        showPcbError(`Temperature must be between ${MIN_TEMP}°C and ${MAX_TEMP}°C`);
         return false;
     }
     return true;
@@ -96,10 +116,6 @@ function validateTemperature(temperature) {
  * @returns {void}
  */
 function calculateTraceResistance() {
-    const MM_TO_M = 0.001;
-    const MICRON_TO_M = 1e-6;
-    const OHM_TO_MILLIOHM = 1000;
-
     calculateAndUpdatePCB(
         ['pcb-trace-length', 'pcb-trace-width', 'pcb-trace-thickness', 'pcb-trace-temperature'],
         'pcb-trace-resistance',
@@ -122,10 +138,6 @@ function calculateTraceResistance() {
  * @returns {void}
  */
 function calculateTraceLength() {
-    const MM_TO_M = 0.001;
-    const MICRON_TO_M = 1e-6;
-    const MILLIOHM_TO_OHM = 0.001;
-
     calculateAndUpdatePCB(
         ['pcb-trace-resistance', 'pcb-trace-width', 'pcb-trace-thickness', 'pcb-trace-temperature'],
         'pcb-trace-length',
@@ -148,10 +160,6 @@ function calculateTraceLength() {
  * @returns {void}
  */
 function calculateTraceWidth() {
-    const MM_TO_M = 0.001;
-    const MICRON_TO_M = 1e-6;
-    const MILLIOHM_TO_OHM = 0.001;
-
     calculateAndUpdatePCB(
         ['pcb-trace-resistance', 'pcb-trace-length', 'pcb-trace-thickness', 'pcb-trace-temperature'],
         'pcb-trace-width',
@@ -174,10 +182,6 @@ function calculateTraceWidth() {
  * @returns {void}
  */
 function calculateTraceThickness() {
-    const MM_TO_M = 0.001;
-    const MICRON_TO_M = 1e-6;
-    const MILLIOHM_TO_OHM = 0.001;
-
     calculateAndUpdatePCB(
         ['pcb-trace-resistance', 'pcb-trace-length', 'pcb-trace-width', 'pcb-trace-temperature'],
         'pcb-trace-thickness',
@@ -203,9 +207,6 @@ function calculateTraceThickness() {
  * @returns {void}
  */
 function calculateViaResistance() {
-    const MM_TO_M = 0.001;
-    const OHM_TO_MILLIOHM = 1000;
-
     calculateAndUpdatePCB(
         ['pcb-via-diameter', 'pcb-via-wall', 'pcb-via-height', 'pcb-via-temperature'],
         'pcb-via-resistance',
@@ -215,9 +216,9 @@ function calculateViaResistance() {
 
             const outerR = (outerDiameter / 2) * MM_TO_M;
             const innerR = ((outerDiameter / 2) - wall) * MM_TO_M;
-            
+
             if (innerR < 0) {
-                 alert("Via wall thickness cannot be greater than half the outer diameter.");
+                 showPcbError("Via wall thickness cannot be greater than half the outer diameter.");
                  return null;
             }
 
@@ -235,9 +236,6 @@ function calculateViaResistance() {
  * @returns {void}
  */
 function calculateViaOuterDiameter() {
-    const MM_TO_M = 0.001;
-    const MILLIOHM_TO_OHM = 0.001;
-
     calculateAndUpdatePCB(
         ['pcb-via-resistance', 'pcb-via-wall', 'pcb-via-height', 'pcb-via-temperature'],
         'pcb-via-diameter',
@@ -246,7 +244,7 @@ function calculateViaOuterDiameter() {
             const resistanceOhm = resistance * MILLIOHM_TO_OHM;
             const heightM = height * MM_TO_M;
             const wallM = wall * MM_TO_M;
-            
+
             const term = (resistivity * heightM) / (Math.PI * resistanceOhm) + Math.pow(wallM, 2);
             if (term < 0) return null;
 
@@ -263,9 +261,6 @@ function calculateViaOuterDiameter() {
  * @returns {void}
  */
 function calculateViaWallThickness() {
-    const MM_TO_M = 0.001;
-    const MILLIOHM_TO_OHM = 0.001;
-
     calculateAndUpdatePCB(
         ['pcb-via-resistance', 'pcb-via-diameter', 'pcb-via-height', 'pcb-via-temperature'],
         'pcb-via-wall',
@@ -291,21 +286,18 @@ function calculateViaWallThickness() {
  * @returns {void}
  */
 function calculateViaHeight() {
-    const MM_TO_M = 0.001;
-    const MILLIOHM_TO_OHM = 0.001;
-    
     calculateAndUpdatePCB(
         ['pcb-via-resistance', 'pcb-via-diameter', 'pcb-via-wall', 'pcb-via-temperature'],
         'pcb-via-height',
         (resistance, outerDiameter, wall, temperature) => {
             const resistivity = calculateCopperResistivity(temperature);
             const resistanceOhm = resistance * MILLIOHM_TO_OHM;
-            
+
             const outerR = (outerDiameter / 2) * MM_TO_M;
             const innerR = ((outerDiameter / 2) - wall) * MM_TO_M;
 
             if (innerR < 0) {
-                 alert("Via wall thickness cannot be greater than half the outer diameter.");
+                 showPcbError("Via wall thickness cannot be greater than half the outer diameter.");
                  return null;
             }
 
@@ -336,11 +328,13 @@ if (window.calculatorRegistry) {
         'pcb',
         'PCB Calculator',
         'Copper trace and via resistance calculations for PCB design',
-        { 
-            calculateTraceResistance, calculateTraceLength, 
+        {
+            calculateTraceResistance, calculateTraceLength,
             calculateTraceWidth, calculateTraceThickness,
             calculateViaResistance, calculateViaOuterDiameter,
             calculateViaWallThickness, calculateViaHeight
         }
     );
-} 
+}
+
+})();

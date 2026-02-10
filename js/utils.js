@@ -173,11 +173,12 @@ function validateInputs(fields, fieldNames, silent = false) {
 /**
  * Validates that a value is positive
  * Shows an alert if validation fails
- * 
+ *
+ * @unused Currently not called by any calculator; retained as a library utility.
  * @param {number|null} value - The value to validate
  * @param {string} fieldName - Name of the field (for error messages)
  * @returns {boolean} - True if value is positive, false otherwise
- * 
+ *
  * @example
  * // Validate that voltage is positive
  * if (!utils.validatePositive(voltage, 'Input Voltage')) {
@@ -213,10 +214,11 @@ function mhzToHz(mhz) {
 
 /**
  * Converts frequency from Hz to MHz
- * 
+ *
+ * @unused Currently not called by any calculator; retained as a library utility.
  * @param {number} hz - Frequency in Hz
  * @returns {number} - Frequency in MHz
- * 
+ *
  * @example
  * const frequencyMHz = utils.hzToMhz(1500000); // Returns 1.5
  */
@@ -226,7 +228,8 @@ function hzToMhz(hz) {
 
 /**
  * Format a resistor value with appropriate units (Ω, kΩ, MΩ)
- * 
+ *
+ * @unused Currently not called by any calculator; retained as a library utility.
  * @param {number} value - Resistor value in ohms
  * @returns {string} Formatted resistor value with units
  */

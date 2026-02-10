@@ -18,7 +18,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- State Variables ---
     let showStandardPairsTimeout;
-    let lastCalculatedTarget = null;
 
     // All calculation functions expect resistance in Ohms.
     // All UI functions for resistance display values in kOhms.
@@ -96,7 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Main Handlers ---
 
     function calculateDivider(target) {
-        lastCalculatedTarget = target;
+        clearError();
         const outputId = `div-${target}`;
         const vtop = utils.getValue('div-vtop');
         const vmid = utils.getValue('div-vmid');
@@ -109,28 +108,38 @@ document.addEventListener('DOMContentLoaded', () => {
             const rtop_ohm = rtop_kohm !== null ? rtop_kohm * 1000 : null;
             const rbot_ohm = rbot_kohm !== null ? rbot_kohm * 1000 : null;
 
+            let fields, names;
             switch (target) {
                 case 'vtop':
-                    if (!utils.validateInputs([vmid, vbot, rtop_ohm, rbot_ohm], ['Vmid', 'Vbot', 'Rtop', 'Rbot'])) return;
-                    resultValue = calculateVtop(vmid, vbot, rtop_ohm, rbot_ohm);
+                    fields = [vmid, vbot, rtop_ohm, rbot_ohm]; names = ['Vmid', 'Vbot', 'Rtop', 'Rbot'];
                     break;
                 case 'rtop':
-                    if (!utils.validateInputs([vtop, vmid, vbot, rbot_ohm], ['Vtop', 'Vmid', 'Vbot', 'Rbot'])) return;
-                    resultValue = calculateRtop_ohm(vtop, vmid, vbot, rbot_ohm) / 1000; // convert to kOhm for display
+                    fields = [vtop, vmid, vbot, rbot_ohm]; names = ['Vtop', 'Vmid', 'Vbot', 'Rbot'];
                     break;
                 case 'rbot':
-                    if (!utils.validateInputs([vtop, vmid, vbot, rtop_ohm], ['Vtop', 'Vmid', 'Vbot', 'Rtop'])) return;
-                    resultValue = calculateRbot_ohm(vtop, vmid, vbot, rtop_ohm) / 1000; // convert to kOhm for display
+                    fields = [vtop, vmid, vbot, rtop_ohm]; names = ['Vtop', 'Vmid', 'Vbot', 'Rtop'];
                     break;
                 case 'vmid':
-                    if (!utils.validateInputs([vtop, vbot, rtop_ohm, rbot_ohm], ['Vtop', 'Vbot', 'Rtop', 'Rbot'])) return;
-                    resultValue = calculateVmid(vtop, vbot, rtop_ohm, rbot_ohm);
+                    fields = [vtop, vbot, rtop_ohm, rbot_ohm]; names = ['Vtop', 'Vbot', 'Rtop', 'Rbot'];
                     break;
                 case 'vbot':
-                    if (!utils.validateInputs([vtop, vmid, rtop_ohm, rbot_ohm], ['Vtop', 'Vmid', 'Rtop', 'Rbot'])) return;
-                    resultValue = calculateVbot(vtop, vmid, rtop_ohm, rbot_ohm);
+                    fields = [vtop, vmid, rtop_ohm, rbot_ohm]; names = ['Vtop', 'Vmid', 'Rtop', 'Rbot'];
                     break;
                 default: return;
+            }
+
+            if (!utils.validateInputs(fields, names, true)) {
+                const missing = names.filter((_, i) => fields[i] === null || isNaN(fields[i]));
+                handleError(`Please enter values for: ${missing.join(', ')}`);
+                return;
+            }
+
+            switch (target) {
+                case 'vtop': resultValue = calculateVtop(vmid, vbot, rtop_ohm, rbot_ohm); break;
+                case 'rtop': resultValue = calculateRtop_ohm(vtop, vmid, vbot, rbot_ohm) / 1000; break;
+                case 'rbot': resultValue = calculateRbot_ohm(vtop, vmid, vbot, rtop_ohm) / 1000; break;
+                case 'vmid': resultValue = calculateVmid(vtop, vbot, rtop_ohm, rbot_ohm); break;
+                case 'vbot': resultValue = calculateVbot(vtop, vmid, rtop_ohm, rbot_ohm); break;
             }
 
             if (resultValue !== null && isFinite(resultValue) && resultValue >= 0) {
@@ -139,17 +148,18 @@ document.addEventListener('DOMContentLoaded', () => {
                  utils.setValue(outputId, '');
                  throw new Error('Calculation resulted in an invalid or non-positive value.');
             }
-           
+
             updateCurrentAndPower();
             updateResistorRatio();
         } catch (error) {
-            alert(`Calculation Error: ${error.message}`);
+            handleError(`Calculation Error: ${error.message}`);
         }
     }
 
     function showStandardPairs(tolerance) {
+        clearError();
         if (showStandardPairsTimeout) clearTimeout(showStandardPairsTimeout);
-        
+
         showStandardPairsTimeout = setTimeout(() => {
             const validatedInputs = getAndValidateInputValues();
             if (!validatedInputs) return;
@@ -177,25 +187,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function findNearestStandardValue(value, values) {
         if (values.length === 0) return null;
-        return values.reduce((best, current) => {
-            const bestError = Math.abs(Math.log10(best) - Math.log10(value));
-            const currentError = Math.abs(Math.log10(current) - Math.log10(value));
-            return currentError < bestError ? current : best;
-        });
+        const idx = utils.findClosestValueIndex(values, value);
+        return idx === -1 ? null : values[idx];
     }
 
     function findNearestStandardValueIndex(value, values) {
-        let bestIndex = -1;
-        let bestError = Infinity;
-        
-        values.forEach((current, index) => {
-            const currentError = Math.abs(Math.log10(current) - Math.log10(value));
-            if (currentError < bestError) {
-                bestError = currentError;
-                bestIndex = index;
-            }
-        });
-        return bestIndex;
+        return utils.findClosestValueIndex(values, value);
     }
 
     function getAndValidateInputValues() {
@@ -205,9 +202,15 @@ document.addEventListener('DOMContentLoaded', () => {
         let rtop_kohm = utils.getValue('div-rtop');
         let rbot_kohm = utils.getValue('div-rbot');
 
-        if (!utils.validateInputs([vtop, vmid, vbot], ['Vtop', 'Vmid', 'Vbot'])) return null;
+        if (!utils.validateInputs([vtop, vmid, vbot], ['Vtop', 'Vmid', 'Vbot'], true)) {
+            const names = ['Vtop', 'Vmid', 'Vbot'];
+            const vals = [vtop, vmid, vbot];
+            const missing = names.filter((_, i) => vals[i] === null || isNaN(vals[i]));
+            handleError(`Please enter values for: ${missing.join(', ')}`);
+            return null;
+        }
         if (vtop <= vmid || vmid <= vbot) {
-            alert('Voltages must be in the order Vtop > Vmid > Vbot.');
+            handleError('Voltages must be in the order Vtop > Vmid > Vbot.');
             return null;
         }
 
@@ -220,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (rtop_kohm === null && rbot_kohm === null) {
             const vdiff = vtop - vmid;
             if (vdiff === 0) {
-                alert("Vtop and Vmid cannot be equal if resistors are not specified.");
+                handleError("Vtop and Vmid cannot be equal if resistors are not specified.");
                 return null;
             }
             const ratio = (vmid - vbot) / vdiff;
@@ -244,8 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rbot_ohm === 0) return [];
         const rtop_std_closest_index = findNearestStandardValueIndex(rtop_ohm, standardValues);
         if (rtop_std_closest_index === -1) return [];
-
-        const rtop_closest_std_val = standardValues[rtop_std_closest_index];
 
         const numValuesAround = 10;
         const startIndex = Math.max(0, rtop_std_closest_index - numValuesAround);
@@ -318,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(titleEl) titleEl.textContent = `Standard Resistor Pairs (${tolerance}%):`;
     }
 
-    function getErrorClass(absError, type) {
+    function getErrorClass(absError) {
         if (absError < 0.5) return 'error-excellent';
         if (absError < 1) return 'error-good';
         if (absError < 5) return 'error-acceptable';
@@ -337,18 +338,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td ${rtopCellClass}>${(pair.rtop_std_ohm / 1000).toFixed(3)}</td>
                 <td ${rbotCellClass}>${(pair.rbot_std_ohm / 1000).toFixed(3)}</td>
                 <td>${(pair.rtop_std_ohm / pair.rbot_std_ohm).toFixed(4)}</td>
-                <td class="${getErrorClass(Math.abs(pair.ratioError), 'ratio')}">${pair.ratioError.toFixed(2)}%</td>
+                <td class="${getErrorClass(Math.abs(pair.ratioError))}">${pair.ratioError.toFixed(2)}%</td>
                 <td>${pair.actual_vmid.toFixed(3)}</td>
                 <td>${pair.actual_current_mA.toFixed(2)}</td>
-                <td class="${getErrorClass(Math.abs(pair.currentError), 'current')}">${pair.currentError.toFixed(2)}%</td>
+                <td class="${getErrorClass(Math.abs(pair.currentError))}">${pair.currentError.toFixed(2)}%</td>
             `;
             tbody.appendChild(row);
         });
     }
 
     function handleError(message, error = null) {
-        console.error(message, error);
-        alert(message);
+        if (error) console.error(message, error);
+        const el = document.getElementById('divider-error');
+        if (el) el.textContent = message || '';
+    }
+
+    function clearError() {
+        const el = document.getElementById('divider-error');
+        if (el) el.textContent = '';
     }
 
     function init() {
