@@ -258,6 +258,46 @@ body {
     background-color: var(--accent-primary-hover);
 }
 
+.standard-button.active {
+    background-color: var(--accent-secondary);
+}
+
+.standard-button.active:hover {
+    background-color: var(--accent-secondary-hover);
+}
+
+/* Solve-for dimension toggle buttons */
+.solve-for-buttons {
+    display: flex;
+    gap: 4px;
+    width: 100%;
+}
+
+.solve-for-btn {
+    flex: 1;
+    padding: 4px 0;
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: bold;
+    height: 28px;
+}
+
+.solve-for-btn:hover {
+    border-color: var(--accent-secondary);
+}
+
+.solve-for-btn.active {
+    background-color: var(--accent-secondary);
+    color: var(--text-on-accent);
+    border-color: var(--accent-secondary);
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 1px;
+}
+
 /* Table styles */
 .table-container {
     width: 100%;
