@@ -21,7 +21,6 @@ function initApplication() {
         }
     } catch (error) {
         console.error('Error during application initialization:', error);
-        alert('An error occurred while loading the application. Please refresh the page and try again.');
     }
 }
 

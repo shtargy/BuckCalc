@@ -135,23 +135,23 @@ function setValue(id, value, decimals = 2) {
 
 /**
  * Validates that all required input fields have values
- * Shows an alert with missing field names if validation fails
- * 
+ *
  * @param {Array<number|null>} fields - Array of field values to validate
  * @param {Array<string>} fieldNames - Array of field names (for error messages)
- * @param {boolean} silent - Whether to prevent showing an alert (default: false)
+ * @param {boolean} silent - If false, shows a browser alert with missing fields (default: true)
  * @returns {boolean} - True if all fields have values, false otherwise
- * 
+ *
  * @example
- * // Validate that required fields have values
+ * // Validate that required fields have values (silent by default)
  * if (!utils.validateInputs(
  *     [value1, value2, value3],
  *     ['Parameter 1', 'Parameter 2', 'Parameter 3']
  * )) {
- *     return; // Exit early if validation fails
+ *     setError('Missing required fields');
+ *     return;
  * }
  */
-function validateInputs(fields, fieldNames, silent = false) {
+function validateInputs(fields, fieldNames, silent = true) {
     const missing = [];
     
     for (let i = 0; i < fields.length; i++) {
