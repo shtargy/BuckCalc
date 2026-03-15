@@ -298,6 +298,43 @@ body {
     outline-offset: 1px;
 }
 
+/* Inductor volume dual-column layout */
+.indvol-columns {
+    display: flex;
+    gap: 12px;
+}
+
+.indvol-column {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.indvol-column .input-group {
+    grid-template-columns: 140px 100px 70px;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+
+.indvol-column .calculator-section {
+    margin-bottom: 0;
+}
+
+.indvol-column .calculator-section + .calculator-section {
+    padding-top: 12px;
+    margin-top: 12px;
+}
+
+.indvol-column .calculator-section + .calculator-section::before {
+    width: 100%;
+}
+
+.indvol-column .calculator-section h3 {
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+    font-size: 0.95em;
+}
+
 /* Table styles */
 .table-container {
     width: 100%;
@@ -638,6 +675,10 @@ body {
     
     .calculator-section + .calculator-section::before {
         width: 100%;
+    }
+
+    .indvol-columns {
+        flex-direction: column;
     }
 }
 

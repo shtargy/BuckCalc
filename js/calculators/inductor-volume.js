@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Inductor Volume Estimator
+ * Inductor Volume Estimator — Dual-Column Comparison
  *
  * Estimates inductor physical size for buck converters using empirical
  * energy-volume and DCR scaling laws derived from Coilcraft XGL families.
@@ -16,6 +16,147 @@
 (function() {
 
 const K2 = 100;  // DCR scaling constant (mΩ, µH, mm³)
+const DIM_RATIO_Y = 1.0;   // Y/X (square footprint)
+const DIM_RATIO_Z = 0.5;   // Z/X (half-height)
+
+const solveForAxis = { a: 'z', b: 'z' };
+
+// --- Column HTML template ---
+
+function createColumnHTML(prefix, label) {
+    const id = (field) => `indvol-${prefix}-${field}`;
+    return `
+    <div class="indvol-column">
+        <div class="calculator-section">
+            <h3>${label}</h3>
+            <div class="input-group">
+                <label for="${id('vin')}">Input Voltage:</label>
+                <input type="number" id="${id('vin')}" step="0.1">
+                <span class="unit">V</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('vout')}">Output Voltage:</label>
+                <input type="number" id="${id('vout')}" step="0.1">
+                <span class="unit">V</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('iload')}">Load Current:</label>
+                <input type="number" id="${id('iload')}" step="0.1">
+                <span class="unit">A</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('fsw')}">Switching Freq:</label>
+                <input type="number" id="${id('fsw')}" step="0.001">
+                <span class="unit">MHz</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('ripple')}">Max Ripple:</label>
+                <input type="number" id="${id('ripple')}" step="1" value="30">
+                <span class="unit">%</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('k1')}">Energy Const (k₁):</label>
+                <input type="number" id="${id('k1')}" step="0.01" value="1.1">
+                <span class="unit">µH·A²/mm³</span>
+            </div>
+        </div>
+
+        <div class="calculator-section">
+            <h3>Results</h3>
+            <div class="input-group">
+                <label for="${id('duty')}">Duty Cycle:</label>
+                <input type="number" id="${id('duty')}" readonly>
+                <span class="unit">%</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('l')}">Inductance (L):</label>
+                <input type="number" id="${id('l')}" readonly>
+                <span class="unit">µH</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('dil')}">Ripple (ΔiL):</label>
+                <input type="number" id="${id('dil')}" readonly>
+                <span class="unit">A</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('ipk')}">Peak (Ipk):</label>
+                <input type="number" id="${id('ipk')}" readonly>
+                <span class="unit">A</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('dcr')}">Estimated DCR:</label>
+                <input type="number" id="${id('dcr')}" readonly>
+                <span class="unit">mΩ</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('cout')}">Est. Output Cap:</label>
+                <input type="number" id="${id('cout')}" readonly>
+                <span class="unit">µF</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('cin')}">Est. Input Cap:</label>
+                <input type="number" id="${id('cin')}" readonly>
+                <span class="unit">µF</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('dcr-pct')}">Inductor Loss:</label>
+                <input type="number" id="${id('dcr-pct')}" readonly>
+                <span class="unit">%</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('fet-pct')}">FET Cond. Loss:</label>
+                <input type="number" id="${id('fet-pct')}" readonly>
+                <span class="unit">%</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('sw-pct')}">Switching Loss:</label>
+                <input type="number" id="${id('sw-pct')}" readonly>
+                <span class="unit">%</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('eff')}">Est. Efficiency:</label>
+                <input type="number" id="${id('eff')}" readonly>
+                <span class="unit">%</span>
+            </div>
+        </div>
+
+        <div class="calculator-section">
+            <h3>Inductor Size/Volume</h3>
+            <div class="input-group">
+                <label for="${id('vol')}">Min Volume:</label>
+                <input type="number" id="${id('vol')}" readonly>
+                <span class="unit">mm³</span>
+            </div>
+            <div class="input-group">
+                <label>Solve for:</label>
+                <div class="solve-for-buttons">
+                    <button class="solve-for-btn" id="${id('solve-x')}">X</button>
+                    <button class="solve-for-btn" id="${id('solve-y')}">Y</button>
+                    <button class="solve-for-btn active" id="${id('solve-z')}">Z</button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="${id('dim-x')}">X:</label>
+                <input type="number" id="${id('dim-x')}" step="0.01">
+                <span class="unit">mm</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('dim-y')}">Y:</label>
+                <input type="number" id="${id('dim-y')}" step="0.01">
+                <span class="unit">mm</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('dim-z')}">Z (height):</label>
+                <input type="number" id="${id('dim-z')}" step="0.01" readonly>
+                <span class="unit">mm</span>
+            </div>
+        </div>
+
+        <p class="error-message" id="${id('error')}" aria-live="polite"></p>
+    </div>`;
+}
+
+// --- Pure calculation helpers (no DOM) ---
 
 function calculateDutyCycle(vin, vout) {
     return vout / vin;
@@ -37,25 +178,27 @@ function calculateDCR(L_uH, Vol_mm3) {
     return K2 * Math.pow(L_uH, 0.8) / Math.pow(Vol_mm3, 2 / 3);
 }
 
-function calculateAll() {
-    const vin = utils.getValue('indvol-vin');
-    const vout = utils.getValue('indvol-vout');
-    const iload = utils.getValue('indvol-iload');
-    const fsw = utils.getValue('indvol-fsw');
-    const ripplePct = utils.getValue('indvol-ripple');
-    const k1 = utils.getValue('indvol-k1');
+// --- Main calculation (scoped to one column) ---
 
-    const errorEl = document.getElementById('inductor-volume-error');
+function calculateAll(prefix) {
+    const get = (field) => utils.getValue(`indvol-${prefix}-${field}`);
+    const set = (field, val, dec) => utils.setValue(`indvol-${prefix}-${field}`, val, dec);
+    const errorEl = document.getElementById(`indvol-${prefix}-error`);
     const setError = (msg) => { if (errorEl) errorEl.textContent = msg || ''; };
-    const outputIds = [
-        'indvol-duty', 'indvol-l', 'indvol-dil',
-        'indvol-ipk', 'indvol-vol', 'indvol-dcr',
-        'indvol-dcr-pct', 'indvol-fet-pct', 'indvol-sw-pct', 'indvol-eff',
-        'indvol-dim-x', 'indvol-dim-y', 'indvol-dim-z'
+
+    const outputFields = [
+        'duty', 'l', 'dil', 'ipk', 'vol', 'dcr', 'cout', 'cin',
+        'dcr-pct', 'fet-pct', 'sw-pct', 'eff',
+        'dim-x', 'dim-y', 'dim-z'
     ];
-    const clearOutputs = () => {
-        outputIds.forEach(id => utils.setValue(id, '', 2));
-    };
+    const clearOutputs = () => outputFields.forEach(f => set(f, '', 2));
+
+    const vin = get('vin');
+    const vout = get('vout');
+    const iload = get('iload');
+    const fsw = get('fsw');
+    const ripplePct = get('ripple');
+    const k1 = get('k1');
 
     setError('');
 
@@ -129,93 +272,105 @@ function calculateAll() {
     const swPct = switchingLoss / pin_mW * 100;
     const efficiency = pout_mW / pin_mW * 100;
 
-    utils.setValue('indvol-duty', D * 100, 2);
-    utils.setValue('indvol-l', L, 3);
-    utils.setValue('indvol-dil', dIL, 2);
-    utils.setValue('indvol-ipk', Ipk, 2);
-    utils.setValue('indvol-vol', vol, 1);
-    utils.setValue('indvol-dcr', dcr, 1);
-    utils.setValue('indvol-dcr-pct', dcrPct, 1);
-    utils.setValue('indvol-fet-pct', fetPct, 1);
-    utils.setValue('indvol-sw-pct', swPct, 1);
-    utils.setValue('indvol-eff', efficiency, 1);
+    // Capacitor estimates (µF, nameplate — includes 2× ceramic DC bias derating)
+    const CERAMIC_DERATING = 2;
+    const coutRipple = dIL / (0.08 * fsw * vout);
+    const coutTransient = (0.5 * iload) / (2 * Math.PI * (fsw / 5) * 0.03 * vout);
+    const cout = Math.max(coutRipple, coutTransient) * CERAMIC_DERATING;
+    const cin = 100 * iload * D * (1 - D) / (fsw * vin) * CERAMIC_DERATING;
 
-    setDimensionsFromVolume(vol);
+    set('duty', D * 100, 2);
+    set('l', L, 3);
+    set('dil', dIL, 2);
+    set('ipk', Ipk, 2);
+    set('vol', vol, 1);
+    set('dcr', dcr, 1);
+    set('cout', cout, 1);
+    set('cin', cin, 1);
+    set('dcr-pct', dcrPct, 1);
+    set('fet-pct', fetPct, 1);
+    set('sw-pct', swPct, 1);
+    set('eff', efficiency, 1);
+
+    setDimensionsFromVolume(prefix, vol);
 }
 
 // --- Package dimension solver ---
-// Default aspect: square footprint, half-height (typical molded inductor)
-const DIM_RATIO_Y = 1.0;   // Y/X
-const DIM_RATIO_Z = 0.5;   // Z/X
 
-let solveForAxis = 'z';
-
-function setSolveFor(axis) {
-    solveForAxis = axis;
+function setSolveFor(prefix, axis) {
+    solveForAxis[prefix] = axis;
     ['x', 'y', 'z'].forEach(d => {
-        const el = document.getElementById('indvol-dim-' + d);
+        const el = document.getElementById(`indvol-${prefix}-dim-${d}`);
         if (el) el.readOnly = (d === axis);
-        const btn = document.getElementById('indvol-solve-' + d);
+        const btn = document.getElementById(`indvol-${prefix}-solve-${d}`);
         if (btn) btn.classList.toggle('active', d === axis);
     });
-    recalcSolvedDim();
+    recalcSolvedDim(prefix);
 }
 
-function setDimensionsFromVolume(vol) {
-    // Set all three from default aspect ratio, then let solve-for override
+function setDimensionsFromVolume(prefix, vol) {
+    const set = (field, val, dec) => utils.setValue(`indvol-${prefix}-${field}`, val, dec);
     const x = Math.pow(vol / (DIM_RATIO_Y * DIM_RATIO_Z), 1 / 3);
-    utils.setValue('indvol-dim-x', x, 2);
-    utils.setValue('indvol-dim-y', x * DIM_RATIO_Y, 2);
-    utils.setValue('indvol-dim-z', x * DIM_RATIO_Z, 2);
+    set('dim-x', x, 2);
+    set('dim-y', x * DIM_RATIO_Y, 2);
+    set('dim-z', x * DIM_RATIO_Z, 2);
 }
 
-function recalcSolvedDim() {
-    const vol = utils.getValue('indvol-vol');
+function recalcSolvedDim(prefix) {
+    const get = (field) => utils.getValue(`indvol-${prefix}-${field}`);
+    const set = (field, val, dec) => utils.setValue(`indvol-${prefix}-${field}`, val, dec);
+    const vol = get('vol');
     if (vol === null || vol <= 0) return;
 
-    const x = utils.getValue('indvol-dim-x');
-    const y = utils.getValue('indvol-dim-y');
-    const z = utils.getValue('indvol-dim-z');
+    const x = get('dim-x');
+    const y = get('dim-y');
+    const z = get('dim-z');
+    const axis = solveForAxis[prefix];
 
-    if (solveForAxis === 'z' && x > 0 && y > 0) {
-        utils.setValue('indvol-dim-z', vol / (x * y), 2);
-    } else if (solveForAxis === 'y' && x > 0 && z > 0) {
-        utils.setValue('indvol-dim-y', vol / (x * z), 2);
-    } else if (solveForAxis === 'x' && y > 0 && z > 0) {
-        utils.setValue('indvol-dim-x', vol / (y * z), 2);
+    if (axis === 'z' && x > 0 && y > 0) {
+        set('dim-z', vol / (x * y), 2);
+    } else if (axis === 'y' && x > 0 && z > 0) {
+        set('dim-y', vol / (x * z), 2);
+    } else if (axis === 'x' && y > 0 && z > 0) {
+        set('dim-x', vol / (y * z), 2);
     }
 }
 
+// --- Event listeners ---
+
 function setupEventListeners() {
-    const inputIds = [
-        'indvol-vin', 'indvol-vout', 'indvol-iload',
-        'indvol-fsw', 'indvol-ripple', 'indvol-k1'
-    ];
+    const inputFields = ['vin', 'vout', 'iload', 'fsw', 'ripple', 'k1'];
 
-    inputIds.forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.addEventListener('input', calculateAll);
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') calculateAll();
-            });
-        }
-    });
+    ['a', 'b'].forEach(prefix => {
+        inputFields.forEach(field => {
+            const el = document.getElementById(`indvol-${prefix}-${field}`);
+            if (el) {
+                el.addEventListener('input', () => calculateAll(prefix));
+                el.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') calculateAll(prefix);
+                });
+            }
+        });
 
-    ['indvol-dim-x', 'indvol-dim-y', 'indvol-dim-z'].forEach(id => {
-        const input = document.getElementById(id);
-        if (input) {
-            input.addEventListener('input', recalcSolvedDim);
-        }
-    });
+        ['dim-x', 'dim-y', 'dim-z'].forEach(field => {
+            const el = document.getElementById(`indvol-${prefix}-${field}`);
+            if (el) el.addEventListener('input', () => recalcSolvedDim(prefix));
+        });
 
-    ['x', 'y', 'z'].forEach(axis => {
-        const btn = document.getElementById('indvol-solve-' + axis);
-        if (btn) btn.addEventListener('click', () => setSolveFor(axis));
+        ['x', 'y', 'z'].forEach(axis => {
+            const btn = document.getElementById(`indvol-${prefix}-solve-${axis}`);
+            if (btn) btn.addEventListener('click', () => setSolveFor(prefix, axis));
+        });
     });
 }
 
+// --- Init ---
+
 function init() {
+    const container = document.getElementById('indvol-columns');
+    if (container) {
+        container.innerHTML = createColumnHTML('a', 'Design A') + createColumnHTML('b', 'Design B');
+    }
     setupEventListeners();
 }
 
@@ -230,7 +385,7 @@ if (window.calculatorRegistry) {
         'inductor-volume',
         'Inductor Volume',
         'Inductor volume estimator for buck converters',
-        { calculateAll }
+        { calculateAll: () => { calculateAll('a'); calculateAll('b'); } }
     );
 }
 
