@@ -55,6 +55,11 @@ function createColumnHTML(prefix, label) {
                 <span class="unit">%</span>
             </div>
             <div class="input-group">
+                <label for="${id('levels')}">Levels (N):</label>
+                <input type="number" id="${id('levels')}" step="1" min="2" max="7" value="2">
+                <span class="unit"></span>
+            </div>
+            <div class="input-group">
                 <label for="${id('k1')}">Energy Const (k₁):</label>
                 <input type="number" id="${id('k1')}" step="0.01" value="1.1">
                 <span class="unit">µH·A²/mm³</span>
@@ -99,6 +104,11 @@ function createColumnHTML(prefix, label) {
                 <span class="unit">µF</span>
             </div>
             <div class="input-group">
+                <label for="${id('fcap')}">Flying Cap:</label>
+                <input type="text" id="${id('fcap')}" readonly value="—">
+                <span class="unit">µF</span>
+            </div>
+            <div class="input-group">
                 <label for="${id('dcr-pct')}">Inductor Loss:</label>
                 <input type="number" id="${id('dcr-pct')}" readonly>
                 <span class="unit">%</span>
@@ -111,6 +121,11 @@ function createColumnHTML(prefix, label) {
             <div class="input-group">
                 <label for="${id('sw-pct')}">Switching Loss:</label>
                 <input type="number" id="${id('sw-pct')}" readonly>
+                <span class="unit">%</span>
+            </div>
+            <div class="input-group">
+                <label for="${id('cap-pct')}">Cap Loss:</label>
+                <input type="number" id="${id('cap-pct')}" readonly>
                 <span class="unit">%</span>
             </div>
             <div class="input-group">
@@ -162,10 +177,6 @@ function calculateDutyCycle(vin, vout) {
     return vout / vin;
 }
 
-function calculateRequiredL(vout, D, fswHz, rippleRatio, iload) {
-    return vout * (1 - D) / (fswHz * rippleRatio * iload) * utils.constants.MICRO;
-}
-
 function calculatePeakCurrent(iload, rippleRatio) {
     return iload * (1 + rippleRatio / 2);
 }
@@ -187,11 +198,15 @@ function calculateAll(prefix) {
     const setError = (msg) => { if (errorEl) errorEl.textContent = msg || ''; };
 
     const outputFields = [
-        'duty', 'l', 'dil', 'ipk', 'vol', 'dcr', 'cout', 'cin',
-        'dcr-pct', 'fet-pct', 'sw-pct', 'eff',
+        'duty', 'l', 'dil', 'ipk', 'vol', 'dcr', 'cout', 'cin', 'fcap',
+        'dcr-pct', 'fet-pct', 'sw-pct', 'cap-pct', 'eff',
         'dim-x', 'dim-y', 'dim-z'
     ];
-    const clearOutputs = () => outputFields.forEach(f => set(f, '', 2));
+    const clearOutputs = () => {
+        outputFields.forEach(f => set(f, '', 2));
+        const fcapEl = document.getElementById(`indvol-${prefix}-fcap`);
+        if (fcapEl) fcapEl.value = '—';
+    };
 
     const vin = get('vin');
     const vout = get('vout');
@@ -199,6 +214,7 @@ function calculateAll(prefix) {
     const fsw = get('fsw');
     const ripplePct = get('ripple');
     const k1 = get('k1');
+    const N = Math.max(2, Math.round(get('levels') || 2));
 
     setError('');
 
@@ -235,34 +251,46 @@ function calculateAll(prefix) {
         return;
     }
 
+    const Nm1 = N - 1;  // (N-1) used throughout
     const D = calculateDutyCycle(vin, vout);
     const rippleRatio = ripplePct / 100;
-    const fswHz = utils.mhzToHz(fsw);
-    const L = calculateRequiredL(vout, D, fswHz, rippleRatio, iload);
+
+    // fsw input = effective inductor frequency; derive per-switch freq
+    const fswEff = fsw;                        // MHz — what the inductor sees
+    const fswPS = fswEff / Nm1;                // MHz — per-switch gate frequency
+    const fswEffHz = utils.mhzToHz(fswEff);
+
+    // FCML: voltage per switch stage, local duty cycle
+    const V_sw = vin / Nm1;
+    const D_local_raw = (Nm1 * D) % 1;
+    const D_local = D_local_raw < 0.01 ? D : D_local_raw;  // clamp interleaving null
+
+    // Inductance: L = Vin × D_local × (1-D_local) / ((N-1) × fswEff × ripple × Iload)
+    const L = vin * D_local * (1 - D_local) / (Nm1 * fswEffHz * rippleRatio * iload) * utils.constants.MICRO;
     const dIL = rippleRatio * iload;
     const Ipk = calculatePeakCurrent(iload, rippleRatio);
     const vol = calculateVolume(L, Ipk, k1);
     const dcr = calculateDCR(L, vol);
 
-    // Auto-estimate FET parameters from operating point
-    // At low Vin (FIVR/FinFET), all parameters shrink; at Vin≥12V, matches discrete/integrated
-    const rdson = 25 * Math.sqrt(vin) / Math.pow(iload, 1.2);          // mΩ
-    const t_sw = 0.5 + vin / 1.6;                                      // ns
-    const coss = 100 * Math.sqrt(iload * vin / 12);                    // pF
-    const qg = 3 * Math.sqrt(iload * vin / 12);                        // nC
-    const VDR = Math.min(5, Math.max(1, vin * 0.5));                   // V (gate drive)
-    const TDT = Math.min(20, Math.max(1, vin * 1.2));                  // ns (dead time)
-    const VF = Math.min(0.7, 0.2 + vin * 0.035);                      // V (body diode)
+    // Auto-estimate FET parameters from V_sw (per switch pair)
+    const rdson = 25 * Math.sqrt(vin) / (Math.pow(iload, 1.2) * Nm1);  // mΩ — net 1/(N-1)
+    const t_sw = 0.5 + V_sw / 1.6;                                      // ns
+    const coss = 100 * Math.sqrt(iload * V_sw / 12);                    // pF (per switch pair)
+    const qg = 3 * Math.sqrt(iload * V_sw / 12);                        // nC (per switch pair)
+    const VDR = Math.min(5, Math.max(1, V_sw * 0.5));                   // V (gate drive)
+    const TDT = Math.min(20, Math.max(1, V_sw * 1.2));                  // ns (dead time)
+    const VF = Math.min(0.7, 0.2 + V_sw * 0.035);                      // V (body diode)
 
-    // Loss calculations (all mW)
+    // Loss calculations (all mW); fswPS = per-switch, fswEff = aggregate
     const dcrLoss = iload * iload * dcr;
     const fetLoss = iload * iload * rdson;
-    const overlapLoss = 0.5 * vin * iload * t_sw * fsw;
-    const cossLoss = 0.5e-3 * coss * vin * vin * fsw;
-    const gateLoss = qg * VDR * fsw;
-    const deadtimeLoss = 2 * iload * VF * TDT * fsw;
+    const overlapLoss = 0.5 * vin * iload * t_sw * fswPS;              // each switch at fswPS, V_sw sums to Vin
+    const cossLoss = 0.5e-3 * coss * V_sw * V_sw * fswEff;            // (N-1) × fswPS = fswEff
+    const gateLoss = qg * VDR * fswEff;                                // all pairs aggregate to fswEff
+    const deadtimeLoss = 2 * iload * VF * TDT * fswEff;                // all dead-time events
     const switchingLoss = overlapLoss + cossLoss + gateLoss + deadtimeLoss;
-    const totalLoss = dcrLoss + fetLoss + switchingLoss;
+    const capLoss = (N - 2) * 3 * Math.pow(iload, 1.4);               // flying cap ESR loss (mW)
+    const totalLoss = dcrLoss + fetLoss + switchingLoss + capLoss;
 
     // Percentages (of Pin)
     const pout_mW = vout * iload * 1000;
@@ -270,16 +298,22 @@ function calculateAll(prefix) {
     const dcrPct = dcrLoss / pin_mW * 100;
     const fetPct = fetLoss / pin_mW * 100;
     const swPct = switchingLoss / pin_mW * 100;
+    const capPct = capLoss / pin_mW * 100;
     const efficiency = pout_mW / pin_mW * 100;
 
     // Capacitor estimates (µF, nameplate — includes 2× ceramic DC bias derating)
     const CERAMIC_DERATING = 2;
-    const coutRipple = dIL / (0.08 * fsw * vout);
-    const coutTransient = (0.5 * iload) / (2 * Math.PI * (fsw / 5) * 0.03 * vout);
+    const coutRipple = dIL / (0.08 * fswEff * vout);
+    const coutTransient = (0.5 * iload) / (2 * Math.PI * (fswEff / 5) * 0.03 * vout);
     const cout = Math.max(coutRipple, coutTransient) * CERAMIC_DERATING;
-    const cin = 100 * iload * D * (1 - D) / (fsw * vin) * CERAMIC_DERATING;
+    const cin = 100 * iload * D * (1 - D) / (fswEff * vin) * CERAMIC_DERATING;
 
-    set('duty', D * 100, 2);
+    // Flying cap estimate (only for N > 2)
+    const fcap = N > 2
+        ? 100 * iload * D_local / (fswEff * V_sw) * CERAMIC_DERATING
+        : null;
+
+    set('duty', D_local * 100, 2);
     set('l', L, 3);
     set('dil', dIL, 2);
     set('ipk', Ipk, 2);
@@ -290,7 +324,12 @@ function calculateAll(prefix) {
     set('dcr-pct', dcrPct, 1);
     set('fet-pct', fetPct, 1);
     set('sw-pct', swPct, 1);
+    set('cap-pct', capPct, 1);
     set('eff', efficiency, 1);
+
+    // Flying cap display
+    const fcapEl = document.getElementById(`indvol-${prefix}-fcap`);
+    if (fcapEl) fcapEl.value = fcap !== null ? fcap.toFixed(1) : '—';
 
     setDimensionsFromVolume(prefix, vol);
 }
@@ -339,7 +378,7 @@ function recalcSolvedDim(prefix) {
 // --- Event listeners ---
 
 function setupEventListeners() {
-    const inputFields = ['vin', 'vout', 'iload', 'fsw', 'ripple', 'k1'];
+    const inputFields = ['vin', 'vout', 'iload', 'fsw', 'ripple', 'levels', 'k1'];
 
     ['a', 'b'].forEach(prefix => {
         inputFields.forEach(field => {

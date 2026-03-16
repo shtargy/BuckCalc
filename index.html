@@ -858,6 +858,10 @@
                     FET parameters auto-estimated from Vin/Iout — ±50% accuracy.
                     Cap estimates assume 1% ripple, 50% load step / 3% droop, BW = fsw/5, with 2× ceramic derating.
                     Best for directional fsw tradeoff guidance, not design sign-off.</p>
+                <p class="info-text"><strong>Levels (N)</strong>: Number of switch levels in a multi-level converter
+                    (e.g. flying capacitor, FCML). N=2 is a standard buck. Higher N divides Vin across (N-1) switch
+                    pairs, reducing per-switch voltage stress and required inductance. Switching frequency
+                    is the effective rate seen by the inductor — at N=3 each switch runs at half that rate.</p>
                 <p class="error-message" id="inductor-volume-error" aria-live="polite"></p>
             </div>
         </div>
