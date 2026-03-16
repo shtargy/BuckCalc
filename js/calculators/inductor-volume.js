@@ -273,24 +273,26 @@ function calculateAll(prefix) {
     const dcr = calculateDCR(L, vol);
 
     // Auto-estimate FET parameters from V_sw (per switch pair)
-    const rdson = 25 * Math.sqrt(vin) / (Math.pow(iload, 1.2) * Nm1);  // mΩ — net 1/(N-1)
-    const t_sw = 0.5 + V_sw / 1.6;                                      // ns
-    const coss = 100 * Math.sqrt(iload * V_sw / 12);                    // pF (per switch pair)
-    const qg = 3 * Math.sqrt(iload * V_sw / 12);                        // nC (per switch pair)
+    const rdson = 20 * Math.sqrt(vin) / (Math.pow(iload, 1.2) * Nm1);  // mΩ — net 1/(N-1)
+    const t_sw = 0.2 + V_sw / 3.5;                                      // ns
+    const coss = 200 * Math.sqrt(iload * V_sw / 12);                    // pF (per switch pair)
+    const qg = 10 * Math.sqrt(iload * V_sw / 12);                       // nC (per switch pair)
     const VDR = Math.min(5, Math.max(1, V_sw * 0.5));                   // V (gate drive)
-    const TDT = Math.min(20, Math.max(1, V_sw * 1.2));                  // ns (dead time)
+    const TDT = Math.min(20, Math.max(0.2, V_sw * 0.4));                // ns (dead time)
     const VF = Math.min(0.7, 0.2 + V_sw * 0.035);                      // V (body diode)
 
     // Loss calculations (all mW); fswPS = per-switch, fswEff = aggregate
+    const R_PAR = 0.3;                                                  // mΩ — PCB, package, via parasitics
     const dcrLoss = iload * iload * dcr;
     const fetLoss = iload * iload * rdson;
+    const parasiticLoss = iload * iload * R_PAR;                       // fixed path resistance
     const overlapLoss = 0.5 * vin * iload * t_sw * fswPS;              // each switch at fswPS, V_sw sums to Vin
     const cossLoss = 0.5e-3 * coss * V_sw * V_sw * fswEff;            // (N-1) × fswPS = fswEff
     const gateLoss = qg * VDR * fswEff;                                // all pairs aggregate to fswEff
     const deadtimeLoss = 2 * iload * VF * TDT * fswEff;                // all dead-time events
     const switchingLoss = overlapLoss + cossLoss + gateLoss + deadtimeLoss;
     const capLoss = (N - 2) * 3 * Math.pow(iload, 1.4);               // flying cap ESR loss (mW)
-    const totalLoss = dcrLoss + fetLoss + switchingLoss + capLoss;
+    const totalLoss = dcrLoss + fetLoss + parasiticLoss + switchingLoss + capLoss;
 
     // Percentages (of Pin)
     const pout_mW = vout * iload * 1000;
