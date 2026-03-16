@@ -308,9 +308,9 @@ function calculateAll(prefix) {
     const cout = Math.max(coutRipple, coutTransient) * CERAMIC_DERATING;
     const cin = 100 * iload * D * (1 - D) / (fswEff * vin) * CERAMIC_DERATING;
 
-    // Flying cap estimate (only for N > 2)
+    // Flying cap estimate (only for N > 2; 10% ripple — inductor absorbs cap ripple)
     const fcap = N > 2
-        ? 100 * iload * D_local / (fswEff * V_sw) * CERAMIC_DERATING
+        ? 10 * iload * D_local / (fswEff * V_sw) * CERAMIC_DERATING
         : null;
 
     set('duty', D_local * 100, 2);
